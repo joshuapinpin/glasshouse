@@ -1,23 +1,13 @@
-import React, { useState } from 'react';
-
-export interface DonorTransaction {
-  id: string;
-  description: string;
-  date: string;
-  amount: number;
-  note?: string;
-  files?: string[];
-  evidenced: boolean;
-  isIncome: boolean;
-}
+import React, { useState, useEffect } from 'react';
+import {
+  fetchFundraisers,
+  fetchTransactions,
+  ApiFundraiser,
+  ApiTransaction,
+} from '../services/api';
 
 interface DonorViewPageProps {
-  fundraiserName?: string;
-  hostedBy?: string;
-  bank?: string;
-  totalReceived?: number;
-  totalSpent?: number;
-  transactions?: DonorTransaction[];
+  userEmail?: string;
 }
 
 const FileIcon = () => (
@@ -34,129 +24,234 @@ const ShieldCheckIcon = () => (
   </svg>
 );
 
-const defaultTransactions: DonorTransaction[] = [
-  {
-    id: 'tx1',
-    description: 'Auckland City Hospital',
-    date: '14 Apr 2025',
-    amount: -1240,
-    note: 'Specialist consultation and imaging — invoice attached',
-    files: ['invoice_apr14.pdf'],
-    evidenced: true,
-    isIncome: false,
-  },
-  {
-    id: 'tx2',
-    description: 'Pharmacy Direct',
-    date: '18 Apr 2025',
-    amount: -87.50,
-    evidenced: false,
-    isIncome: false,
-  },
-  {
-    id: 'tx3',
-    description: 'Donation received',
-    date: '20 Apr 2025',
-    amount: 500,
-    evidenced: true,
-    isIncome: true,
-  },
-  {
-    id: 'tx4',
-    description: 'Radiology NZ',
-    date: '22 Apr 2025',
-    amount: -320,
-    note: 'MRI scan for diagnosis — receipt pending upload',
-    evidenced: false,
-    isIncome: false,
-  },
-  {
-    id: 'tx5',
-    description: 'Donation received',
-    date: '25 Apr 2025',
-    amount: 750,
-    evidenced: true,
-    isIncome: true,
-  },
-];
+const ChevronIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 
-const DonorViewPage: React.FC<DonorViewPageProps> = ({
-  fundraiserName = 'Medical fund for Mum',
-  hostedBy = 'Jane Doe',
-  bank = 'ANZ ••••7821',
-  totalReceived = 5200,
-  totalSpent = 1327,
-  transactions = defaultTransactions,
-}) => {
-  const [filter, setFilter] = useState<'all' | 'debit' | 'credit'>('all');
-    const [bubble, setBubble] = useState<{ msg: string; x: number; y: number } | null>(null);
+const Header = () => (
+  <header style={{
+    background: 'var(--color-surface)',
+    borderBottom: '1px solid var(--color-border)',
+    padding: '0 2rem',
+    height: 52,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  }}>
+    <div style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 6,
+      background: 'var(--color-glass-blue-lt)',
+      borderRadius: 20,
+      padding: '3px 10px 3px 6px',
+    }}>
+      <span style={{ color: 'var(--color-glass-blue)' }}><ShieldCheckIcon /></span>
+      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-glass-blue)' }}>
+        Verified by Glasshouse
+      </span>
+    </div>
+  </header>
+);
 
-  const showBubble = (msg: string, e: React.MouseEvent) => {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setBubble({
-      msg,
-      x: rect.left + rect.width / 2,
-      y: rect.top,
-    });
-    setTimeout(() => setBubble(null), 1500);
-  };
-  const remaining = totalReceived - totalSpent;
+// ── List view ─────────────────────────────────────────────────────────────────
 
-  const filtered = transactions.filter(tx => {
-    if (filter === 'debit') return !tx.isIncome;
-    if (filter === 'credit') return tx.isIncome;
-    return true;
-  });
+interface ListViewProps {
+  userEmail: string;
+  onSelect: (f: ApiFundraiser) => void;
+}
 
-  const evidencedCount = transactions.filter(tx => !tx.isIncome && tx.evidenced).length;
-  const debitCount = transactions.filter(tx => !tx.isIncome).length;
+const ListView: React.FC<ListViewProps> = ({ userEmail, onSelect }) => {
+  const [fundraisers, setFundraisers] = useState<ApiFundraiser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!userEmail) return;
+    fetchFundraisers(userEmail)
+      .then(setFundraisers)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [userEmail]);
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
-      {/* Slim header */}
-      <header style={{
-        background: 'var(--color-surface)',
-        borderBottom: '1px solid var(--color-border)',
-        padding: '0 2rem',
-        height: 52,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-      }}>
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-          background: 'var(--color-glass-blue-lt)',
-          borderRadius: 20,
-          padding: '3px 10px 3px 6px',
-        }}>
-          <span style={{ color: 'var(--color-glass-blue)' }}><ShieldCheckIcon /></span>
-          <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-glass-blue)' }}>
-            Verified by Glasshouse
-          </span>
-        </div>
-      </header>
-
+      <Header />
       <main style={{ maxWidth: 680, margin: '0 auto', padding: '2rem 1.5rem' }}>
+        <div className="fade-up" style={{ marginBottom: '1.75rem' }}>
+          <h1 style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 28,
+            letterSpacing: '-0.02em',
+            color: 'var(--color-ink)',
+            marginBottom: 6,
+          }}>
+            Fundraisers
+          </h1>
+          <p style={{ fontSize: 14, color: 'var(--color-ink-muted)' }}>
+            Transparent, bank-verified spending records.
+          </p>
+        </div>
+
+        {loading && (
+          <p style={{ fontSize: 14, color: 'var(--color-ink-muted)' }}>Loading…</p>
+        )}
+        {error && (
+          <p style={{ fontSize: 14, color: 'var(--color-glass-red)' }}>{error}</p>
+        )}
+        {!loading && !error && fundraisers.length === 0 && (
+          <p style={{ fontSize: 14, color: 'var(--color-ink-muted)' }}>
+            No fundraisers found for this account.
+          </p>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {fundraisers.map((f, i) => {
+            const pct = f.target_amount > 0
+              ? Math.min(Math.round((f.current_amount / f.target_amount) * 100), 100)
+              : 0;
+            return (
+              <div
+                key={f.fundraiserID}
+                className={`card card-pad fade-up fade-up-${Math.min(i + 2, 4)}`}
+                style={{ cursor: 'pointer', transition: 'box-shadow var(--transition), transform var(--transition)' }}
+                onClick={() => onSelect(f)}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-lift)';
+                  (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-card)';
+                  (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
+                    <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--color-ink)', marginBottom: 4 }}>
+                      {f.name}
+                    </p>
+                    <p style={{ fontSize: 12, color: 'var(--color-ink-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {f.description}
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--color-ink)' }}>
+                        ${f.current_amount.toLocaleString()}
+                      </p>
+                      <p style={{ fontSize: 11, color: 'var(--color-ink-muted)' }}>
+                        of ${f.target_amount.toLocaleString()}
+                      </p>
+                    </div>
+                    <span style={{ color: 'var(--color-ink-muted)' }}><ChevronIcon /></span>
+                  </div>
+                </div>
+                {/* Progress bar */}
+                <div style={{ height: 4, borderRadius: 2, background: 'var(--color-bg)', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${pct}%`,
+                    background: 'var(--color-glass-teal)',
+                    borderRadius: 2,
+                    transition: 'width 0.6s ease',
+                  }} />
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--color-glass-teal)', marginTop: 4 }}>{pct}% of goal</p>
+              </div>
+            );
+          })}
+        </div>
+
+        <p style={{
+          textAlign: 'center',
+          fontSize: 11,
+          color: 'var(--color-ink-muted)',
+          marginTop: '2.5rem',
+          lineHeight: 1.8,
+        }}>
+          Bank data read-only via Akahu<br />
+          Powered by <strong>Glasshouse</strong> · Transparent fundraising
+        </p>
+      </main>
+    </div>
+  );
+};
+
+// ── Detail view ───────────────────────────────────────────────────────────────
+
+interface DetailViewProps {
+  fundraiser: ApiFundraiser;
+  onBack: () => void;
+}
+
+const DetailView: React.FC<DetailViewProps> = ({ fundraiser, onBack }) => {
+  const [transactions, setTransactions] = useState<ApiTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'debit' | 'credit'>('all');
+  const [bubble, setBubble] = useState<{ msg: string; x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    fetchTransactions(fundraiser.fundraiserID)
+      .then(setTransactions)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [fundraiser.fundraiserID]);
+
+  const showBubble = (msg: string, e: React.MouseEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setBubble({ msg, x: rect.left + rect.width / 2, y: rect.top });
+    setTimeout(() => setBubble(null), 1500);
+  };
+
+  const totalReceived = transactions.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const totalSpent = transactions.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const remaining = totalReceived - totalSpent;
+
+  const debits = transactions.filter(t => t.amount < 0);
+  const evidencedCount = debits.filter(t => !!t.description).length;
+
+  const filtered = transactions.filter(t => {
+    if (filter === 'debit') return t.amount < 0;
+    if (filter === 'credit') return t.amount > 0;
+    return true;
+  });
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
+      <Header />
+      <main style={{ maxWidth: 680, margin: '0 auto', padding: '2rem 1.5rem' }}>
+
+        <button
+          className="back-link"
+          onClick={onBack}
+          style={{ marginBottom: '1.25rem' }}
+        >
+          ← All fundraisers
+        </button>
 
         {/* Hero */}
         <div className="fade-up" style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h1 style={{
             fontFamily: 'var(--font-display)',
-            fontSize: 32,
+            fontSize: 30,
             letterSpacing: '-0.02em',
             color: 'var(--color-ink)',
-            marginBottom: 8,
+            marginBottom: 6,
           }}>
-            {fundraiserName}
+            {fundraiser.name}
           </h1>
-          <p style={{ fontSize: 14, color: 'var(--color-ink-muted)' }}>
-            Raised by {hostedBy} · {bank}
+          <p style={{ fontSize: 14, color: 'var(--color-ink-muted)', marginBottom: 8 }}>
+            {fundraiser.description}
           </p>
-                    {/* Share button */}
+          <p style={{ fontSize: 13, color: 'var(--color-ink-muted)' }}>
+            Hosted by {fundraiser.email}
+          </p>
           <button
-            onClick={() => alert('Public link copied to clipboard')}
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href).catch(() => null);
+            }}
             style={{
               marginTop: 12,
               padding: '6px 16px',
@@ -170,13 +265,6 @@ const DonorViewPage: React.FC<DonorViewPageProps> = ({
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6,
-              transition: 'all var(--transition)',
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.background = 'var(--color-glass-blue-lt)';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.background = 'transparent';
             }}
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -186,58 +274,78 @@ const DonorViewPage: React.FC<DonorViewPageProps> = ({
           </button>
         </div>
 
+        {/* Target progress */}
+        <div className="card card-pad fade-up fade-up-1" style={{ marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-ink)' }}>Fundraising goal</span>
+            <span style={{ fontSize: 13, color: 'var(--color-ink-muted)' }}>
+              ${totalReceived.toLocaleString()} of ${fundraiser.target_amount.toLocaleString()}
+            </span>
+          </div>
+          <div style={{ height: 6, borderRadius: 3, background: 'var(--color-bg)', overflow: 'hidden' }}>
+            <div style={{
+              height: '100%',
+              width: `${fundraiser.target_amount > 0 ? Math.min((totalReceived / fundraiser.target_amount) * 100, 100) : 0}%`,
+              background: 'var(--color-glass-teal)',
+              borderRadius: 3,
+            }} />
+          </div>
+        </div>
+
         {/* Stats */}
-        <div className="stat-grid fade-up fade-up-1">
+        <div className="stat-grid fade-up fade-up-1" style={{ marginBottom: '1.25rem' }}>
           <div className="stat-card" style={{ textAlign: 'center' }}>
             <div className="stat-label">Total received</div>
             <div className="stat-value">${totalReceived.toLocaleString()}</div>
           </div>
           <div className="stat-card" style={{ textAlign: 'center' }}>
             <div className="stat-label">Total spent</div>
-            <div className="stat-value">${totalSpent.toLocaleString()}</div>
+            <div className="stat-value">${totalSpent.toFixed(2)}</div>
           </div>
           <div className="stat-card" style={{ textAlign: 'center' }}>
             <div className="stat-label">Remaining</div>
             <div className="stat-value" style={{ color: 'var(--color-glass-teal)' }}>
-              ${remaining.toLocaleString()}
+              ${remaining.toFixed(2)}
             </div>
           </div>
         </div>
 
         {/* Evidence summary */}
-        <div className="card card-pad fade-up fade-up-2" style={{ marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-ink)', marginBottom: 3 }}>
-                Spending transparency
-              </p>
-              <p style={{ fontSize: 12, color: 'var(--color-ink-muted)' }}>
-                {evidencedCount} of {debitCount} transactions evidenced
-              </p>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{
-                width: 120,
-                height: 6,
-                borderRadius: 3,
-                background: 'var(--color-bg)',
-                overflow: 'hidden',
-                marginBottom: 4,
-              }}>
-                <div style={{
-                  height: '100%',
-                  width: `${Math.round((evidencedCount / Math.max(debitCount, 1)) * 100)}%`,
-                  background: 'var(--color-glass-teal)',
-                  borderRadius: 3,
-                  transition: 'width 0.6s ease',
-                }} />
+        {debits.length > 0 && (
+          <div className="card card-pad fade-up fade-up-2" style={{ marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-ink)', marginBottom: 3 }}>
+                  Spending transparency
+                </p>
+                <p style={{ fontSize: 12, color: 'var(--color-ink-muted)' }}>
+                  {evidencedCount} of {debits.length} transactions evidenced
+                </p>
               </div>
-              <span style={{ fontSize: 12, color: 'var(--color-glass-teal)', fontWeight: 500 }}>
-                {Math.round((evidencedCount / Math.max(debitCount, 1)) * 100)}%
-              </span>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{
+                  width: 120,
+                  height: 6,
+                  borderRadius: 3,
+                  background: 'var(--color-bg)',
+                  overflow: 'hidden',
+                  marginBottom: 4,
+                }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${Math.round((evidencedCount / Math.max(debits.length, 1)) * 100)}%`,
+                    background: 'var(--color-glass-teal)',
+                    borderRadius: 3,
+                    transition: 'width 0.6s ease',
+                  }} />
+                </div>
+                <span style={{ fontSize: 12, color: 'var(--color-glass-teal)', fontWeight: 500 }}>
+                  {Math.round((evidencedCount / Math.max(debits.length, 1)) * 100)}%
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Filter tabs */}
         <div className="fade-up fade-up-3" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
@@ -269,98 +377,100 @@ const DonorViewPage: React.FC<DonorViewPageProps> = ({
           </div>
         </div>
 
-        {/* Transactions */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {filtered.map((tx, i) => (
-            <div key={tx.id} className={`card card-pad fade-up fade-up-${Math.min(i + 4, 4)}`}>
-              {/* Row */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: tx.note || !tx.evidenced && !tx.isIncome ? 10 : 0 }}>
-                <div>
-                  <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-ink)', marginBottom: 2 }}>
-                    {tx.description}
-                  </p>
-                  <p style={{ fontSize: 12, color: 'var(--color-ink-muted)' }}>{tx.date}</p>
-                </div>
-                <p style={{
-                  fontSize: 15,
-                  fontWeight: 500,
-                  color: tx.amount < 0 ? 'var(--color-glass-red)' : 'var(--color-glass-green)',
-                  flexShrink: 0,
-                  marginLeft: 12,
-                }}>
-                  {tx.amount < 0 ? '−' : '+'}${Math.abs(tx.amount).toFixed(2)}
-                </p>
-              </div>
+        {loading && (
+          <p style={{ fontSize: 14, color: 'var(--color-ink-muted)' }}>Loading transactions…</p>
+        )}
 
-              {/* Note/evidence block */}
-              {!tx.isIncome && (
+        {!loading && filtered.length === 0 && (
+          <p style={{ fontSize: 14, color: 'var(--color-ink-muted)' }}>No transactions yet.</p>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {filtered.map((tx, i) => {
+            const isIncome = tx.amount > 0;
+            const hasNote = !!tx.description;
+            return (
+              <div key={tx.transactionID} className={`card card-pad fade-up fade-up-${Math.min(i + 4, 4)}`}>
                 <div style={{
-                  borderTop: '1px solid var(--color-border)',
-                  paddingTop: 10,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  marginBottom: !isIncome ? 10 : 0,
                 }}>
-                  {tx.evidenced && tx.note ? (
-                    <div style={{
-                      background: 'var(--color-bg)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '8px 12px',
-                    }}>
-                      <p style={{ fontSize: 13, color: 'var(--color-ink-mid)', marginBottom: tx.files?.length ? 8 : 0 }}>
-                        {tx.note}
-                      </p>
-                      {tx.files && tx.files.length > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          {tx.files.map(f => (
-                            <div key={f} style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 5,
-                              background: 'var(--color-surface)',
-                              border: '1px solid var(--color-border)',
-                              borderRadius: 'var(--radius-sm)',
-                              padding: '3px 9px',
-                              fontSize: 11,
-                              color: 'var(--color-glass-blue)',
-                              cursor: 'pointer',
-                            }}
-                            onClick={
-                              (e)=> showBubble(`Preview: ${f} (coming soon)`,e)
-                            }>
-                              <FileIcon />{f}
-                            </div>
-                          ))}
-                          <span className="badge badge-green" style={{ fontSize: 10 }}>Evidenced</span>
-                        </div>
-                      )}
-                    </div>
-                  ) : tx.note ? (
-                    <div style={{
-                      background: 'var(--color-glass-amber-lt)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '8px 12px',
-                    }}>
-                      <p style={{ fontSize: 13, color: 'var(--color-glass-amber)', marginBottom: 4 }}>
-                        {tx.note}
-                      </p>
-                      <span className="badge badge-amber" style={{ fontSize: 10 }}>Receipt pending</span>
-                    </div>
-                  ) : (
-                    <div style={{
-                      background: 'var(--color-glass-amber-lt)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '8px 12px',
-                    }}>
-                      <p style={{ fontSize: 12, color: 'var(--color-glass-amber)' }}>
-                        Note pending from fundraiser host
-                      </p>
-                    </div>
-                  )}
+                  <div>
+                    <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-ink)', marginBottom: 2 }}>
+                      {tx.payee}
+                    </p>
+                    <p style={{ fontSize: 12, color: 'var(--color-ink-muted)' }}>
+                      {tx.created_at ? tx.created_at.slice(0, 10) : ''}
+                    </p>
+                  </div>
+                  <p style={{
+                    fontSize: 15,
+                    fontWeight: 500,
+                    color: isIncome ? 'var(--color-glass-green)' : 'var(--color-glass-red)',
+                    flexShrink: 0,
+                    marginLeft: 12,
+                  }}>
+                    {isIncome ? '+' : '−'}${Math.abs(tx.amount).toFixed(2)}
+                  </p>
                 </div>
-              )}
-            </div>
-          ))}
+
+                {!isIncome && (
+                  <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 10 }}>
+                    {hasNote ? (
+                      <div style={{
+                        background: 'var(--color-bg)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '8px 12px',
+                      }}>
+                        <p style={{ fontSize: 13, color: 'var(--color-ink-mid)', marginBottom: tx.file ? 8 : 0 }}>
+                          {tx.description}
+                        </p>
+                        {tx.file && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 5,
+                                background: 'var(--color-surface)',
+                                border: '1px solid var(--color-border)',
+                                borderRadius: 'var(--radius-sm)',
+                                padding: '3px 9px',
+                                fontSize: 11,
+                                color: 'var(--color-glass-blue)',
+                                cursor: 'pointer',
+                              }}
+                              onClick={e => showBubble(`Preview: ${tx.file} (coming soon)`, e)}
+                            >
+                              <FileIcon />{tx.file}
+                            </div>
+                            <span className="badge badge-green" style={{ fontSize: 10 }}>Evidenced</span>
+                          </div>
+                        )}
+                        {!tx.file && (
+                          <span className="badge badge-green" style={{ fontSize: 10 }}>Evidenced</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{
+                        background: 'var(--color-glass-amber-lt)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '8px 12px',
+                      }}>
+                        <p style={{ fontSize: 12, color: 'var(--color-glass-amber)' }}>
+                          Note pending from fundraiser host
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        {/* Footer */}
         <p style={{
           textAlign: 'center',
           fontSize: 11,
@@ -371,7 +481,8 @@ const DonorViewPage: React.FC<DonorViewPageProps> = ({
           Bank data read-only via Akahu<br />
           Powered by <strong>Glasshouse</strong> · Transparent fundraising
         </p>
-                        {bubble && (
+
+        {bubble && (
           <div style={{
             position: 'fixed',
             left: bubble.x,
@@ -387,7 +498,6 @@ const DonorViewPage: React.FC<DonorViewPageProps> = ({
             pointerEvents: 'none',
           }}>
             {bubble.msg}
-            {/* 向下的小三角箭头 */}
             <div style={{
               position: 'absolute',
               bottom: -5,
@@ -404,6 +514,18 @@ const DonorViewPage: React.FC<DonorViewPageProps> = ({
       </main>
     </div>
   );
+};
+
+// ── Root ──────────────────────────────────────────────────────────────────────
+
+const DonorViewPage: React.FC<DonorViewPageProps> = ({ userEmail = '' }) => {
+  const [selected, setSelected] = useState<ApiFundraiser | null>(null);
+
+  if (selected) {
+    return <DetailView fundraiser={selected} onBack={() => setSelected(null)} />;
+  }
+
+  return <ListView userEmail={userEmail} onSelect={setSelected} />;
 };
 
 export default DonorViewPage;

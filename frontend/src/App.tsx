@@ -143,7 +143,7 @@ const App: React.FC = () => {
           onBack={() => setPage('account')}
         />
       )}
-      {page === 'donor' && <DonorViewPage />}
+      {page === 'donor' && <DonorViewPage userEmail={userEmail} />}
       {page === 'forgot' && (
         <ForgotPasswordPage onBack={handleForgotBack} />
       )}
