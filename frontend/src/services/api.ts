@@ -104,6 +104,14 @@ export async function fetchTransactions(fundraiserId: number): Promise<ApiTransa
     return res.json();
 }
 
+export async function refreshBank(): Promise<void> {
+    const res = await fetch(`${BASE}/transactions/refresh_bank`, { method: 'POST' });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail ?? 'Bank refresh failed');
+    }
+}
+
 export async function syncTransactions(fundraiserId: number): Promise<{ synced: number }> {
     const res = await fetch(`${BASE}/transactions/sync?fundraiser_id=${fundraiserId}`, { method: 'POST' });
     if (!res.ok) {

@@ -23,6 +23,13 @@ FUNDRAISER_TABLE = "Fundraiser"
 
 class AkahuClient:
 
+    async def refresh_connections(self) -> dict:
+        """Trigger Akahu to pull fresh data from the bank. Rate-limited to 1/hour."""
+        async with httpx.AsyncClient(headers=AKAHU_HEADERS) as client:
+            response = await client.post(f"{AKAHU_BASE_URL}/refresh")
+            response.raise_for_status()
+            return response.json()
+
     async def fetch_accounts(self) -> list[dict]:
         async with httpx.AsyncClient(headers=AKAHU_HEADERS) as client:
             response = await client.get(f"{AKAHU_BASE_URL}/accounts")
@@ -73,11 +80,25 @@ class AkahuClient:
         ).execute()
         return len(rows)
 
+    def _refresh_current_amount(self, fundraiser_id: int) -> None:
+        result = supabase.table(TRANSACTIONS_TABLE).select("amount").eq("fundraiserID", fundraiser_id).execute()
+        total_received = sum(t["amount"] for t in (result.data or []) if t["amount"] > 0)
+        supabase.table(FUNDRAISER_TABLE).update({"current_amount": total_received}).eq("fundraiserID", fundraiser_id).execute()
+
     async def sync_fundraiser(self, fundraiser_id: int, akahu_account_id: str) -> int:
         pending = await self.fetch_pending_transactions(akahu_account_id)
         settled = await self.fetch_transactions(akahu_account_id)
-        all_txns = pending + settled
+        # De-duplicate: a pending txn and its settled counterpart share the same
+        # date/amount/description. Prefer the settled version (has a real _id).
+        seen: dict[tuple, bool] = {}
+        all_txns = []
+        for t in settled + pending:
+            key = (t.get("date", ""), t["amount"], t["description"])
+            if key not in seen:
+                seen[key] = True
+                all_txns.append(t)
         count = self.upsert_transactions(fundraiser_id, all_txns)
+        self._refresh_current_amount(fundraiser_id)
         logger.info(f"Synced {count} transactions for fundraiser {fundraiser_id}")
         return count
 

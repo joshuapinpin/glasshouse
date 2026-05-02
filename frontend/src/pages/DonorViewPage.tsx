@@ -17,6 +17,8 @@ const FileIcon = () => (
   </svg>
 );
 
+const fileUrl = (path: string) => `/uploads/${path.split('/').pop()}`;
+
 const ShieldCheckIcon = () => (
   <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
     <path d="M8 2L3 4v4c0 3 2.5 5.5 5 6 2.5-.5 5-3 5-6V4L8 2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
@@ -194,7 +196,7 @@ const DetailView: React.FC<DetailViewProps> = ({ fundraiser, onBack }) => {
 
   useEffect(() => {
     fetchTransactions(fundraiser.fundraiserID)
-      .then(setTransactions)
+      .then(data => setTransactions([...data].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [fundraiser.fundraiserID]);
@@ -438,30 +440,20 @@ const DetailView: React.FC<DetailViewProps> = ({ fundraiser, onBack }) => {
                           {tx.description}
                         </p>
                         {tx.file && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <div
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 5,
-                                background: 'var(--color-surface)',
-                                border: '1px solid var(--color-border)',
-                                borderRadius: 'var(--radius-sm)',
-                                padding: '3px 9px',
-                                fontSize: 11,
-                                color: 'var(--color-glass-blue)',
-                                cursor: 'pointer',
-                              }}
-                              onClick={e => showBubble(`Preview: ${tx.file} (coming soon)`, e)}
-                            >
-                              <FileIcon />{tx.file}
-                            </div>
-                            <span className="badge badge-green" style={{ fontSize: 10 }}>Evidenced</span>
-                          </div>
+                          <img
+                            src={fileUrl(tx.file!)}
+                            alt={tx.file}
+                            style={{
+                              marginTop: 8,
+                              maxWidth: '100%',
+                              maxHeight: 220,
+                              borderRadius: 'var(--radius-md)',
+                              border: '1px solid var(--color-border)',
+                              display: 'block',
+                            }}
+                          />
                         )}
-                        {!tx.file && (
-                          <span className="badge badge-green" style={{ fontSize: 10 }}>Evidenced</span>
-                        )}
+                        <span className="badge badge-green" style={{ fontSize: 10, marginTop: tx.file ? 8 : 0, display: 'inline-block' }}>Evidenced</span>
                       </div>
                     ) : (
                       <div style={{

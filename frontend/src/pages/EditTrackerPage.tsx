@@ -5,6 +5,7 @@ import {
   fetchTransactions,
   syncTransactions,
   updateTransactionDescription,
+  refreshBank,
   ApiFundraiser,
 } from '../services/api';
 
@@ -29,12 +30,8 @@ interface EditTrackerPageProps {
   onSave?: (transactions: Transaction[]) => void;
 }
 
-const FileIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
-    <path d="M3 12V2.5L7 1h4v11H3z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-    <path d="M7 1v3H3" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-  </svg>
-);
+
+const fileUrl = (path: string) => `/uploads/${path.split('/').pop()}`;
 
 const statusConfig: Record<EvidenceStatus, { label: string; className: string }> = {
   evidenced:  { label: 'Evidenced',   className: 'badge badge-green' },
@@ -43,7 +40,9 @@ const statusConfig: Record<EvidenceStatus, { label: string; className: string }>
 };
 
 function mapTransactions(raw: Awaited<ReturnType<typeof fetchTransactions>>): Transaction[] {
-  return raw.map(t => ({
+  return [...raw]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .map(t => ({
     id: String(t.transactionID),
     transactionId: t.transactionID,
     description: t.payee,
@@ -113,6 +112,8 @@ const EditTrackerPage: React.FC<EditTrackerPageProps> = ({
     setSyncing(true);
     setSyncMsg('');
     try {
+      await refreshBank();
+      await new Promise(r => setTimeout(r, 3000));
       const { synced } = await syncTransactions(fundraiserId);
       const txns = await fetchTransactions(fundraiserId);
       setTransactions(mapTransactions(txns));
@@ -288,33 +289,20 @@ const EditTrackerPage: React.FC<EditTrackerPageProps> = ({
                       }}
                     />
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    {tx.files.map(file => (
-                      <div key={file} style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 5,
-                        background: 'var(--color-bg)',
+                  {tx.files.map(file => (
+                    <img
+                      key={file}
+                      src={fileUrl(file)}
+                      alt={file}
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: 220,
+                        borderRadius: 'var(--radius-md)',
                         border: '1px solid var(--color-border)',
-                        borderRadius: 'var(--radius-sm)',
-                        padding: '4px 10px',
-                        fontSize: 12,
-                        color: 'var(--color-ink-mid)',
-                      }}>
-                        <FileIcon />{file}
-                        <button
-                          onClick={() => removeFile(tx.id, file)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-ink-muted)', fontSize: 14, padding: 0, marginLeft: 2, lineHeight: 1 }}
-                        >×</button>
-                      </div>
-                    ))}
-                    <button
-                      style={{ background: 'none', border: 'none', fontSize: 12, color: 'var(--color-glass-blue)', cursor: 'pointer', padding: 0 }}
-                      onClick={() => simulateFileUpload(tx.id)}
-                    >
-                      + Add file or photo
-                    </button>
-                  </div>
+                        display: 'block',
+                      }}
+                    />
+                  ))}
                 </div>
               )}
             </div>

@@ -42,6 +42,15 @@ async def get_transactions_by_fundraiser_id(fundraiser_id: int):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.post("/refresh_bank")
+async def refresh_bank():
+    """Ask Akahu to fetch the latest data from the bank. Rate-limited to once per hour."""
+    try:
+        result = await akahu_client.refresh_connections()
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @router.post("/sync")
 async def sync_transactions(fundraiser_id: int):
     """Pull latest transactions from Akahu and upsert into the DB."""
