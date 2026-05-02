@@ -47,7 +47,7 @@ class FundraiserService:
             Fundraiser data or None if not found
         """
         try:
-            response = supabase.table(self.table_name).select("*").eq("id",
+            response = supabase.table(self.table_name).select("*").eq("fundraiserID",
                                                                       fundraiser_id).execute()
             return response.data[0] if response.data else None
         except Exception as e:
@@ -80,13 +80,12 @@ class FundraiserService:
         """
         try:
             response = supabase.table(self.table_name).update(
-                update_data).eq("id", fundraiser_id).execute()
+                update_data).eq("fundraiserID", fundraiser_id).execute()
             return response.data[0] if response.data else None
         except Exception as e:
             raise Exception(f"Error updating fundraiser: {str(e)}")
 
-    def update_column(self, fundraiser_id: int, column_name: str,
-                      value) -> dict:
+    def update_column(self, fundraiser_id: int, column_name: str, value) -> dict:
         """
         Update a specific column for a fundraiser.
 
@@ -100,8 +99,7 @@ class FundraiserService:
         """
         return self.update_fundraiser(fundraiser_id, {column_name: value})
 
-    def update_current_amount(self, fundraiser_id, new_amount):
+    def update_current_amount(self, fundraiser_id: int, new_amount: float):
         return self.update_column(fundraiser_id, "current_amount", new_amount)
-
 
 fundraiser_service = FundraiserService()

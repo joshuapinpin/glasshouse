@@ -12,6 +12,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.routers import auth, fundraisers, transactions
+app.include_router(auth.router)
+app.include_router(fundraisers.router)
+app.include_router(transactions.router)
+
 
 class Transaction(BaseModel):
     Amount: float
