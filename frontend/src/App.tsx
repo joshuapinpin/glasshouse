@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './styles/globals.css';
 
 import AuthPage from './pages/AuthPage';
 import AccountPage from './pages/AccountPage';
+import { Fundraiser } from './pages/AccountPage';
 import CreateFundraiserPage from './pages/CreateFundraiserPage';
 import EditTrackerPage from './pages/EditTrackerPage';
 import DonorViewPage from './pages/DonorViewPage';
+import { fetchFundraisers, ApiFundraiserSummary } from './services/api';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
 type Page = 'auth' | 'account' | 'create' | 'edit' | 'donor' | 'forgot';
@@ -13,6 +15,24 @@ type Page = 'auth' | 'account' | 'create' | 'edit' | 'donor' | 'forgot';
 const App: React.FC = () => {
   const [page, setPage] = useState<Page>('auth');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [apiFundraisers, setApiFundraisers] = useState<ApiFundraiserSummary[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (page === 'account') {
+      fetchFundraisers().then(setApiFundraisers).catch(console.error);
+    }
+  }, [page]);
+
+  const fundraisers: Fundraiser[] = apiFundraisers.map(f => ({
+    id: f.id,
+    name: f.Name,
+    bank: '',
+    accountMasked: '',
+    transactionCount: 0,
+    totalRaised: f.CurrentAmount,
+    status: 'active',
+  }));
   const [prefillEmail, setPrefillEmail] = useState('');
 
   const handleLogin = () => {
@@ -92,7 +112,11 @@ const App: React.FC = () => {
         <AccountPage
           userName="Jane"
           initials="JD"
-          onViewFundraiser={() => setPage('edit')}
+          fundraisers={fundraisers}
+          onViewFundraiser={(id) => {
+            setSelectedId(id);
+            setPage('edit');
+          }}
           onCreateNew={() => setPage('create')}
         />
       )}
@@ -104,6 +128,7 @@ const App: React.FC = () => {
       )}
       {page === 'edit' && (
         <EditTrackerPage
+          fundraiserId={selectedId ?? ''}
           onBack={() => setPage('account')}
         />
       )}
