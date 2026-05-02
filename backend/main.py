@@ -17,6 +17,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.routers import auth, fundraisers, transactions
+app.include_router(auth.router)
+app.include_router(fundraisers.router)
+app.include_router(transactions.router)
+
 
 class Transaction(BaseModel):
     Amount: float
@@ -52,13 +57,3 @@ async def say_hello(name: str):
     return {"message": f"Hello {name}"}
 
 
-@app.get("/fundraisers", response_model=List[FundraiserSummary])
-async def list_fundraisers():
-    # TODO: replace with real DB query
-    return []
-
-
-@app.get("/fundraisers/{fundraiser_id}", response_model=FundraiserDetail)
-async def get_fundraiser(fundraiser_id: str):
-    # TODO: replace with real DB query
-    raise HTTPException(status_code=404, detail="Fundraiser not found")
