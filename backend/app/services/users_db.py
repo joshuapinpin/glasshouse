@@ -1,7 +1,4 @@
-# backend/app/services/auth_service.py
-
 import os
-from typing import Optional
 
 from dotenv import load_dotenv
 from supabase import create_client, Client
