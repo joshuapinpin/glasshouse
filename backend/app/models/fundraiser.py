@@ -1,7 +1,4 @@
-from pydantic import BaseModel, Field, EmailStr
-
-from backend.app.models.transaction import Transaction
-
+from pydantic import BaseModel, EmailStr
 
 class Fundraiser(BaseModel):
     fundraiserID: int
