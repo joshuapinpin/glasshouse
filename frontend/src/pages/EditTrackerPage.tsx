@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Topbar from '../components/Topbar';
 import { fetchFundraiser, ApiFundraiserDetail } from '../services/api';
 
@@ -15,32 +15,12 @@ export interface Transaction {
 }
 
 interface EditTrackerPageProps {
-    fundraiserId: string;
+  fundraiserId: string;
   fundraiserName?: string;
   fundraiserBank?: string;
-  transactions?: Transaction[];
   onBack?: () => void;
   onSave?: (transactions: Transaction[]) => void;
 }
-
-const [detail, setDetail] = useState<ApiFundraiserDetail | null>(null);
-const [loading, setLoading] = useState(true);
-
-useEffect(()=> {
-    fetchFundraiser(fundraiserId)
-    .then(setDetail)
-    .finally(()=> setLoading(false));
-    }, [fundraiserId]);
-
-const transactions: Transaction[] = (detail?.Transactions ?? []).map((t, i) => ({
-    id: String(i),
-    description, t.Payee,
-    date: t.Date,
-    amount: -t.Amount,
-    note: t.Description,
-    files: t.File ? [t.File] : [],
-    status: 'needs_note', // derive from backend
-    }));
 
 const FileIcon = () => (
   <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
@@ -49,45 +29,6 @@ const FileIcon = () => (
   </svg>
 );
 
-const defaultTransactions: Transaction[] = [
-  {
-    id: 'tx1',
-    description: 'Auckland City Hospital',
-    date: '14 Apr 2025',
-    amount: -1240,
-    note: 'Specialist consultation and imaging — invoice attached',
-    files: ['invoice_apr14.pdf'],
-    status: 'evidenced',
-  },
-  {
-    id: 'tx2',
-    description: 'Pharmacy Direct',
-    date: '18 Apr 2025',
-    amount: -87.50,
-    note: '',
-    files: [],
-    status: 'needs_note',
-  },
-  {
-    id: 'tx3',
-    description: 'Donation received',
-    date: '20 Apr 2025',
-    amount: 500,
-    note: '',
-    files: [],
-    status: 'income',
-  },
-  {
-    id: 'tx4',
-    description: 'Radiology NZ',
-    date: '22 Apr 2025',
-    amount: -320,
-    note: '',
-    files: [],
-    status: 'needs_note',
-  },
-];
-
 const statusConfig: Record<EvidenceStatus, { label: string; className: string }> = {
   evidenced:  { label: 'Evidenced',   className: 'badge badge-green' },
   needs_note: { label: 'Needs note',  className: 'badge badge-amber' },
@@ -95,14 +36,39 @@ const statusConfig: Record<EvidenceStatus, { label: string; className: string }>
 };
 
 const EditTrackerPage: React.FC<EditTrackerPageProps> = ({
-  fundraiserName = 'Medical fund for Mum',
-  fundraiserBank = 'ANZ ••••7821',
-  transactions: initialTransactions = defaultTransactions,
+  fundraiserId,
+  fundraiserName,
+  fundraiserBank,
   onBack,
   onSave,
 }) => {
-  const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
+  const [detail, setDetail] = useState<ApiFundraiserDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (!fundraiserId) return;
+    setLoading(true);
+    fetchFundraiser(fundraiserId)
+      .then(data => {
+        setDetail(data);
+        setTransactions(data.Transactions.map((t, i) => ({
+          id: String(i),
+          description: t.Payee,
+          date: t.Date,
+          amount: -t.Amount,
+          note: t.Description,
+          files: t.File ? [t.File] : [],
+          status: t.Amount > 0 ? 'income' : 'needs_note',
+        })));
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [fundraiserId]);
+
+  const displayName = fundraiserName ?? detail?.Name ?? 'Fundraiser';
+  const displayBank = fundraiserBank ?? '';
 
   const updateNote = (id: string, note: string) => {
     setTransactions(prev => prev.map(tx =>
@@ -131,6 +97,17 @@ const EditTrackerPage: React.FC<EditTrackerPageProps> = ({
     setTimeout(() => setSaved(false), 2000);
   };
 
+  if (loading) {
+    return (
+      <div className="page-shell">
+        <Topbar initials="JD" userName="Jane" />
+        <main className="page-content">
+          <p style={{ color: 'var(--color-ink-muted)', marginTop: '2rem' }}>Loading transactions…</p>
+        </main>
+      </div>
+    );
+  }
+
   const needsNoteCount = transactions.filter(tx => tx.status === 'needs_note').length;
 
   return (
@@ -139,7 +116,7 @@ const EditTrackerPage: React.FC<EditTrackerPageProps> = ({
 
       <main className="page-content">
         <button className="back-link" onClick={onBack}>
-          ← {fundraiserName}
+          ← {displayName}
         </button>
 
         <div className="page-header fade-up">
@@ -155,21 +132,23 @@ const EditTrackerPage: React.FC<EditTrackerPageProps> = ({
         </div>
 
         {/* Account info pill */}
-        <div className="fade-up fade-up-1" style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 8,
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-xl)',
-          padding: '5px 14px',
-          fontSize: 12,
-          color: 'var(--color-ink-mid)',
-          marginBottom: '1.25rem',
-        }}>
-          <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--color-glass-teal)', display: 'inline-block' }} />
-          {fundraiserBank}
-        </div>
+        {displayBank && (
+          <div className="fade-up fade-up-1" style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-xl)',
+            padding: '5px 14px',
+            fontSize: 12,
+            color: 'var(--color-ink-mid)',
+            marginBottom: '1.25rem',
+          }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--color-glass-teal)', display: 'inline-block' }} />
+            {displayBank}
+          </div>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {transactions.map((tx, i) => (

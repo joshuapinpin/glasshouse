@@ -5,7 +5,7 @@ export interface ApiTransaction {
     Payee: string;
     Date: string;
     Description: string;
-    File: stirng;
+    File: string;
     }
 
 export interface ApiFundraiserDetail {
@@ -32,7 +32,7 @@ Promise<ApiFundraiserSummary[]> {
     }
 
 export async function fetchFundraiser(id: string):
-Promise<APIFundraiserDetail> {
+Promise<ApiFundraiserDetail> {
     const res = await fetch (`${BASE}/fundraisers/${id}`);
     if (!res.ok) throw new Error("Failed to load fundraiser");
     return res.json();
