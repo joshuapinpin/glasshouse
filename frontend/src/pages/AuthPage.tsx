@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Logo from '../logo/logo';
+import { signIn, signUp } from '../services/api';
 
 type Mode = 'login' | 'signup';
 
@@ -11,8 +12,8 @@ const ShieldIcon = () => (
 );
 
 interface AuthPageProps {
-  onLogin?: (email: string, password: string) => void;
-  onSignup?: (name: string, email: string, password: string) => void;
+  onLogin?: (email: string, token: string) => void;
+  onSignup?: (email: string, token: string) => void;
   onForgotPassword?: () => void;
   prefillEmail?: string;
 }
@@ -22,14 +23,20 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onSignup, onForgotPassword
   const [name, setName] = useState('');
   const [email, setEmail] = useState(prefillEmail || '');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
+    // Auth bypassed for demo — email scopes the fundraiser list
     if (mode === 'login') {
-      onLogin?.(email, password);
+      onLogin?.(email, '');
     } else {
-      onSignup?.(name, email, password);
+      onSignup?.(email, '');
     }
+    setLoading(false);
   };
 
   return (
@@ -73,7 +80,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onSignup, onForgotPassword
           {(['login', 'signup'] as Mode[]).map((m) => (
             <button
               key={m}
-              onClick={() => setMode(m)}
+              onClick={() => { setMode(m); setError(''); }}
               style={{
                 flex: 1,
                 padding: '0.875rem',
@@ -130,15 +137,23 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onSignup, onForgotPassword
             />
           </div>
 
+          {error && (
+            <p style={{ fontSize: 13, color: 'var(--color-glass-red)', margin: 0 }}>{error}</p>
+          )}
+
           <button
             type="submit"
             className="btn btn-primary btn-full"
             style={{ marginTop: 4, padding: '0.75rem' }}
+            disabled={loading}
           >
-            {mode === 'login' ? 'Log in to Glasshouse' : 'Create account'}
+            {loading
+              ? (mode === 'login' ? 'Logging in…' : 'Creating account…')
+              : (mode === 'login' ? 'Log in to Glasshouse' : 'Create account')
+            }
           </button>
 
-                    {mode === 'login' && (
+          {mode === 'login' && (
             <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--color-ink-muted)' }}>
               <a href="#" onClick={(e) => { e.preventDefault(); onForgotPassword?.(); }}>Forgot password?</a>
             </p>

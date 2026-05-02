@@ -53,15 +53,15 @@ class FundraiserService:
         except Exception as e:
             raise Exception(f"Error retrieving fundraiser: {str(e)}")
 
-    def get_all_fundraisers(self) -> list:
+    def get_all_fundraisers(self, email: str = None) -> list:
         """
-        Retrieve all fundraisers from the database.
-
-        Returns:
-            List of all fundraisers
+        Retrieve all fundraisers, optionally filtered by owner email.
         """
         try:
-            response = supabase.table(self.table_name).select("*").execute()
+            query = supabase.table(self.table_name).select("*")
+            if email:
+                query = query.eq("email", email)
+            response = query.execute()
             return response.data
         except Exception as e:
             raise Exception(f"Error retrieving fundraisers: {str(e)}")

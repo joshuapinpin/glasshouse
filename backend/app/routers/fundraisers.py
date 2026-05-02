@@ -3,6 +3,7 @@ from pydantic import EmailStr
 
 from app.models.fundraiser import Fundraiser
 from app.services.fundraisers_db import fundraiser_service
+from app.services.akahu_client import akahu_client
 
 router = APIRouter(
     prefix="/fundraisers",
@@ -13,7 +14,12 @@ router = APIRouter(
 @router.post("/add")
 async def add_fundraiser(fundraiser: Fundraiser):
     try:
-        response = fundraiser_service.add_fundraiser(fundraiser.model_dump())
+        data = fundraiser.model_dump(exclude={"fundraiserID"})
+        if not data.get("akahu_access_token"):
+            accounts = await akahu_client.fetch_accounts()
+            if accounts:
+                data["akahu_access_token"] = accounts[0]["_id"]
+        response = fundraiser_service.add_fundraiser(data)
         return response
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -31,7 +37,7 @@ async def get_fundraisers(fundraiserID: int):
 @router.get("/getAll")
 async def get_all_fundraisers(email: EmailStr):
     try:
-        response = fundraiser_service.get_all_fundraisers()
+        response = fundraiser_service.get_all_fundraisers(email=email)
         return response
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

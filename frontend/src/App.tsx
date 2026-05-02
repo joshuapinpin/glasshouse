@@ -7,55 +7,66 @@ import { Fundraiser } from './pages/AccountPage';
 import CreateFundraiserPage from './pages/CreateFundraiserPage';
 import EditTrackerPage from './pages/EditTrackerPage';
 import DonorViewPage from './pages/DonorViewPage';
-import { fetchFundraisers, ApiFundraiserSummary } from './services/api';
+import { fetchFundraisers, ApiFundraiser } from './services/api';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
 type Page = 'auth' | 'account' | 'create' | 'edit' | 'donor' | 'forgot';
 
+function initialsFromEmail(email: string): string {
+  const local = email.split('@')[0];
+  const parts = local.split(/[._-]/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return local.slice(0, 2).toUpperCase();
+}
+
 const App: React.FC = () => {
   const [page, setPage] = useState<Page>('auth');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [apiFundraisers, setApiFundraisers] = useState<ApiFundraiserSummary[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (page === 'account') {
-      fetchFundraisers().then(setApiFundraisers).catch(console.error);
-    }
-  }, [page]);
-
-  const fundraisers: Fundraiser[] = apiFundraisers.map(f => ({
-    id: f.id,
-    name: f.Name,
-    bank: '',
-    accountMasked: '',
-    transactionCount: 0,
-    totalRaised: f.CurrentAmount,
-    status: 'active',
-  }));
+  const [userEmail, setUserEmail] = useState('');
+  const [token, setToken] = useState('');
+  const [apiFundraisers, setApiFundraisers] = useState<ApiFundraiser[]>([]);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [prefillEmail, setPrefillEmail] = useState('');
 
-  const handleLogin = () => {
-    setIsLoggedIn(true);
+  useEffect(() => {
+    if (page === 'account' && userEmail) {
+      fetchFundraisers(userEmail).then(setApiFundraisers).catch(console.error);
+    }
+  }, [page, userEmail]);
+
+  const fundraisers: Fundraiser[] = apiFundraisers.map(f => ({
+    id: String(f.fundraiserID),
+    name: f.name,
+    bank: 'Westpac',
+    accountMasked: '••••7703',
+    transactionCount: 0,
+    totalRaised: f.current_amount,
+    status: 'active',
+  }));
+
+  const userInitials = userEmail ? initialsFromEmail(userEmail) : '';
+
+  const handleLogin = (email: string, accessToken: string) => {
+    setUserEmail(email);
+    setToken(accessToken);
     setPage('account');
   };
 
-  const handleSignup = () => {
-    setIsLoggedIn(true);
+  const handleSignup = (email: string, accessToken: string) => {
+    setUserEmail(email);
+    setToken(accessToken);
     setPage('account');
   };
 
-  const handleForgotPassword = () => {
-    setPage('forgot');
-  };
+  const handleForgotPassword = () => setPage('forgot');
 
   const handleForgotBack = (email?: string) => {
     if (email) setPrefillEmail(email);
     setPage('auth');
   };
+
   return (
     <>
-      {/* Demo page switcher bar (remove in production) */}
+      {/* Demo page switcher (remove in production) */}
       <div style={{
         position: 'fixed',
         bottom: 16,
@@ -97,8 +108,7 @@ const App: React.FC = () => {
         ))}
       </div>
 
-      {/* Pages */}
-            {page === 'auth' && (
+      {page === 'auth' && (
         <AuthPage
           onLogin={handleLogin}
           onSignup={handleSignup}
@@ -108,11 +118,11 @@ const App: React.FC = () => {
       )}
       {page === 'account' && (
         <AccountPage
-          userName="Jane"
-          initials="JD"
+          userName={userEmail}
+          initials={userInitials}
           fundraisers={fundraisers}
           onViewFundraiser={(id) => {
-            setSelectedId(id);
+            setSelectedId(Number(id));
             setPage('edit');
           }}
           onCreateNew={() => setPage('create')}
@@ -120,23 +130,22 @@ const App: React.FC = () => {
       )}
       {page === 'create' && (
         <CreateFundraiserPage
+          userEmail={userEmail}
           onBack={() => setPage('account')}
           onComplete={() => setPage('account')}
         />
       )}
-      {page === 'edit' && (
+      {page === 'edit' && selectedId !== null && (
         <EditTrackerPage
-          fundraiserId={selectedId ?? ''}
+          fundraiserId={selectedId}
+          userEmail={userEmail}
+          userInitials={userInitials}
           onBack={() => setPage('account')}
         />
       )}
-            {page === 'donor' && (
-        <DonorViewPage />
-      )}
+      {page === 'donor' && <DonorViewPage />}
       {page === 'forgot' && (
-        <ForgotPasswordPage
-          onBack={handleForgotBack}
-        />
+        <ForgotPasswordPage onBack={handleForgotBack} />
       )}
     </>
   );
