@@ -19,6 +19,14 @@ const FileIcon = () => (
 
 const fileUrl = (path: string) => `/uploads/${path.split('/').pop()}`;
 
+const formatNZDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-NZ', {
+    timeZone: 'Pacific/Auckland',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+
 const ShieldCheckIcon = () => (
   <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
     <path d="M8 2L3 4v4c0 3 2.5 5.5 5 6 2.5-.5 5-3 5-6V4L8 2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
@@ -414,7 +422,7 @@ const DetailView: React.FC<DetailViewProps> = ({ fundraiser, onBack }) => {
                       {tx.payee}
                     </p>
                     <p style={{ fontSize: 12, color: 'var(--color-ink-muted)' }}>
-                      {tx.created_at ? tx.created_at.slice(0, 10) : ''}
+                      {tx.created_at ? formatNZDate(tx.created_at) : ''}
                     </p>
                   </div>
                   <p style={{

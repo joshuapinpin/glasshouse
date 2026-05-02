@@ -33,6 +33,14 @@ interface EditTrackerPageProps {
 
 const fileUrl = (path: string) => `/uploads/${path.split('/').pop()}`;
 
+const formatNZDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-NZ', {
+    timeZone: 'Pacific/Auckland',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+
 const statusConfig: Record<EvidenceStatus, { label: string; className: string }> = {
   evidenced:  { label: 'Evidenced',   className: 'badge badge-green' },
   needs_note: { label: 'Needs note',  className: 'badge badge-amber' },
@@ -46,7 +54,7 @@ function mapTransactions(raw: Awaited<ReturnType<typeof fetchTransactions>>): Tr
     id: String(t.transactionID),
     transactionId: t.transactionID,
     description: t.payee,
-    date: t.created_at?.slice(0, 10) ?? '',
+    date: t.created_at ? formatNZDate(t.created_at) : '',
     amount: t.amount,
     note: t.description ?? '',
     files: t.file ? [t.file] : [],

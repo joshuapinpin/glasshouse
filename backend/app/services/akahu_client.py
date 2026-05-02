@@ -1,6 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 import hashlib
 import logging
+
+NZ_TZ = ZoneInfo("Pacific/Auckland")
 
 import httpx
 from supabase import create_client
@@ -60,6 +63,17 @@ class AkahuClient:
         key = f"{t['date']}|{t['amount']}|{t['description']}"
         return int(hashlib.md5(key.encode()).hexdigest()[:8], 16)
 
+    def _akahu_date_to_nzt(self, date_str: str) -> str:
+        """Parse an Akahu date string (UTC) and return it as an NZT ISO timestamp."""
+        try:
+            if "T" in date_str:
+                dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+            else:
+                dt = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            return dt.astimezone(NZ_TZ).isoformat()
+        except (ValueError, AttributeError):
+            return date_str
+
     def _map_transaction(self, fundraiser_id: int, t: dict) -> dict:
         txn_id = t.get("_id") or self._make_transaction_id(t)
         if isinstance(txn_id, str):
@@ -69,6 +83,7 @@ class AkahuClient:
             "fundraiserID": fundraiser_id,
             "amount": t["amount"],
             "payee": t["description"],
+            "created_at": self._akahu_date_to_nzt(t.get("date", "")),
         }
 
     def upsert_transactions(self, fundraiser_id: int, transactions: list[dict]) -> int:
