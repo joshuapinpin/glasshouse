@@ -89,6 +89,17 @@ const DonorViewPage: React.FC<DonorViewPageProps> = ({
   transactions = defaultTransactions,
 }) => {
   const [filter, setFilter] = useState<'all' | 'debit' | 'credit'>('all');
+    const [bubble, setBubble] = useState<{ msg: string; x: number; y: number } | null>(null);
+
+  const showBubble = (msg: string, e: React.MouseEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setBubble({
+      msg,
+      x: rect.left + rect.width / 2,
+      y: rect.top,
+    });
+    setTimeout(() => setBubble(null), 1500);
+  };
   const remaining = totalReceived - totalSpent;
 
   const filtered = transactions.filter(tx => {
@@ -143,6 +154,36 @@ const DonorViewPage: React.FC<DonorViewPageProps> = ({
           <p style={{ fontSize: 14, color: 'var(--color-ink-muted)' }}>
             Raised by {hostedBy} · {bank}
           </p>
+                    {/* Share button */}
+          <button
+            onClick={() => alert('Public link copied to clipboard')}
+            style={{
+              marginTop: 12,
+              padding: '6px 16px',
+              borderRadius: 20,
+              border: '1px solid var(--color-glass-blue)',
+              background: 'transparent',
+              color: 'var(--color-glass-blue)',
+              fontSize: 12,
+              fontWeight: 500,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              transition: 'all var(--transition)',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.background = 'var(--color-glass-blue-lt)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.background = 'transparent';
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M5.5 5.5h-1a3 3 0 000 6h1m4-6h1a3 3 0 010 6h-1m-4.5-3h5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Copy public link
+          </button>
         </div>
 
         {/* Stats */}
@@ -280,7 +321,10 @@ const DonorViewPage: React.FC<DonorViewPageProps> = ({
                               fontSize: 11,
                               color: 'var(--color-glass-blue)',
                               cursor: 'pointer',
-                            }}>
+                            }}
+                            onClick={
+                              (e)=> showBubble(`Preview: ${f} (coming soon)`,e)
+                            }>
                               <FileIcon />{f}
                             </div>
                           ))}
@@ -327,6 +371,36 @@ const DonorViewPage: React.FC<DonorViewPageProps> = ({
           Bank data read-only via Akahu<br />
           Powered by <strong>Glasshouse</strong> · Transparent fundraising
         </p>
+                        {bubble && (
+          <div style={{
+            position: 'fixed',
+            left: bubble.x,
+            top: bubble.y - 8,
+            transform: 'translate(-50%, -100%)',
+            background: 'rgba(26,30,36,0.9)',
+            color: '#fff',
+            padding: '8px 14px',
+            borderRadius: 12,
+            fontSize: 12,
+            whiteSpace: 'nowrap',
+            zIndex: 10000,
+            pointerEvents: 'none',
+          }}>
+            {bubble.msg}
+            {/* 向下的小三角箭头 */}
+            <div style={{
+              position: 'absolute',
+              bottom: -5,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 0,
+              height: 0,
+              borderLeft: '6px solid transparent',
+              borderRight: '6px solid transparent',
+              borderTop: '6px solid rgba(26,30,36,0.9)',
+            }} />
+          </div>
+        )}
       </main>
     </div>
   );

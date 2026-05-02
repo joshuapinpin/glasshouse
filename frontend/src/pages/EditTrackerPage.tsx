@@ -90,7 +90,13 @@ const EditTrackerPage: React.FC<EditTrackerPageProps> = ({
       tx.id === id ? { ...tx, files: [...tx.files, name] } : tx
     ));
   };
-
+  const removeFile = (txId: string, fileName: string) => {
+  setTransactions(prev => prev.map(tx =>
+    tx.id === txId
+      ? { ...tx, files: tx.files.filter(f => f !== fileName) }
+      : tx
+    ));
+  };
   const handleSave = () => {
     onSave?.(transactions);
     setSaved(true);
@@ -197,7 +203,7 @@ const EditTrackerPage: React.FC<EditTrackerPageProps> = ({
                     />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    {tx.files.map(file => (
+                                        {tx.files.map(file => (
                       <div key={file} style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -210,6 +216,22 @@ const EditTrackerPage: React.FC<EditTrackerPageProps> = ({
                         color: 'var(--color-ink-mid)',
                       }}>
                         <FileIcon />{file}
+                        <button
+                          onClick={() => removeFile(tx.id, file)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'var(--color-ink-muted)',
+                            fontSize: 14,
+                            padding: 0,
+                            marginLeft: 2,
+                            lineHeight: 1,
+                          }}
+                          title="Remove file"
+                        >
+                          ×
+                        </button>
                       </div>
                     ))}
                     <button

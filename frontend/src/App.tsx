@@ -53,8 +53,6 @@ const App: React.FC = () => {
     if (email) setPrefillEmail(email);
     setPage('auth');
   };
-
-  // Simple demo nav — replace with React Router in production
   return (
     <>
       {/* Demo page switcher bar (remove in production) */}
