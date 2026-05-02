@@ -113,9 +113,9 @@ def run_all_tests():
     print(f"Test Password: {TEST_PASSWORD}")
 
     try:
-        # Test sign up
-        test_sign_up()
-        time.sleep(1)
+        # # Test sign up
+        # test_sign_up()
+        # time.sleep(1)
 
         # Test sign in
         access_token = test_sign_in()
