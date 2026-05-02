@@ -143,6 +143,36 @@ const DonorViewPage: React.FC<DonorViewPageProps> = ({
           <p style={{ fontSize: 14, color: 'var(--color-ink-muted)' }}>
             Raised by {hostedBy} · {bank}
           </p>
+                    {/* Share button */}
+          <button
+            onClick={() => alert('Public link copied to clipboard')}
+            style={{
+              marginTop: 12,
+              padding: '6px 16px',
+              borderRadius: 20,
+              border: '1px solid var(--color-glass-blue)',
+              background: 'transparent',
+              color: 'var(--color-glass-blue)',
+              fontSize: 12,
+              fontWeight: 500,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              transition: 'all var(--transition)',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.background = 'var(--color-glass-blue-lt)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.background = 'transparent';
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M5.5 5.5h-1a3 3 0 000 6h1m4-6h1a3 3 0 010 6h-1m-4.5-3h5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Copy public link
+          </button>
         </div>
 
         {/* Stats */}
