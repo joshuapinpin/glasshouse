@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import Topbar from '../components/Topbar';
+import { createFundraiser } from '../services/api';
 
 interface CreateFundraiserPageProps {
+  userEmail: string;
   onBack?: () => void;
-  onComplete?: (data: FundraiserData) => void;
+  onComplete?: () => void;
 }
 
 interface FundraiserData {
   name: string;
   description: string;
   externalLink: string;
+  targetAmount: string;
   bankConnected: boolean;
 }
 
@@ -28,14 +31,17 @@ const CheckIcon = () => (
   </svg>
 );
 
-const CreateFundraiserPage: React.FC<CreateFundraiserPageProps> = ({ onBack, onComplete }) => {
+const CreateFundraiserPage: React.FC<CreateFundraiserPageProps> = ({ userEmail, onBack, onComplete }) => {
   const [step, setStep] = useState(0);
   const [data, setData] = useState<FundraiserData>({
     name: '',
     description: '',
     externalLink: '',
+    targetAmount: '',
     bankConnected: false,
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const update = (field: keyof FundraiserData) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -48,9 +54,32 @@ const CreateFundraiserPage: React.FC<CreateFundraiserPageProps> = ({ onBack, onC
     }, 1200);
   };
 
+  const handleLaunch = async () => {
+    setError('');
+    if (!userEmail) {
+      setError('Please log in before creating a fundraiser.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const payload = {
+        name: data.name,
+        description: data.description,
+        email: userEmail,
+        target_amount: parseFloat(data.targetAmount) || 0,
+      };
+      await createFundraiser(payload);
+      onComplete?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create fundraiser');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="page-shell">
-      <Topbar initials="JD" userName="Jane" onLogoClick={onBack} />
+      <Topbar initials={userEmail ? userEmail.slice(0, 2).toUpperCase() : 'JD'} userName={userEmail || 'User'} onLogoClick={onBack} />
 
       <main className="page-content">
         <button className="back-link" onClick={onBack}>
@@ -135,6 +164,18 @@ const CreateFundraiserPage: React.FC<CreateFundraiserPageProps> = ({ onBack, onC
                   value={data.description}
                   onChange={update('description')}
                   rows={4}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label>Target amount ($)</label>
+                <input
+                  type="number"
+                  placeholder="e.g. 5000"
+                  value={data.targetAmount}
+                  onChange={update('targetAmount')}
+                  min="0"
+                  step="0.01"
                   required
                 />
               </div>
@@ -258,6 +299,7 @@ const CreateFundraiserPage: React.FC<CreateFundraiserPageProps> = ({ onBack, onC
               {[
                 { label: 'Fundraiser name', value: data.name },
                 { label: 'Description', value: data.description },
+                { label: 'Target amount', value: data.targetAmount ? `$${parseFloat(data.targetAmount).toLocaleString()}` : '—' },
                 { label: 'External link', value: data.externalLink || '—' },
                 { label: 'Bank account', value: 'ANZ ••••7821 (read-only)' },
               ].map(({ label, value }) => (
@@ -279,14 +321,19 @@ const CreateFundraiserPage: React.FC<CreateFundraiserPageProps> = ({ onBack, onC
               By launching, you agree that transactions will be visible to anyone with the public link. You can add notes and evidence to each transaction at any time.
             </p>
 
+            {error && (
+              <p style={{ fontSize: 13, color: 'var(--color-glass-red)', margin: 0 }}>{error}</p>
+            )}
+
             <div style={{ display: 'flex', gap: 10 }}>
               <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setStep(1)}>← Back</button>
               <button
                 className="btn btn-primary"
                 style={{ flex: 2, padding: '0.75rem' }}
-                onClick={() => onComplete?.(data)}
+                disabled={loading}
+                onClick={handleLaunch}
               >
-                Launch fundraiser
+                {loading ? 'Launching…' : 'Launch fundraiser'}
               </button>
             </div>
           </div>

@@ -1,7 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List
+
+from app.routers.auth import router as auth_router
+from app.routers.fundraisers import router as fundraisers_router
+from app.routers.transactions import router as transactions_router
 
 app = FastAPI()
 
@@ -12,53 +14,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.routers import auth, fundraisers, transactions
-app.include_router(auth.router)
-app.include_router(fundraisers.router)
-app.include_router(transactions.router)
-
-
-class Transaction(BaseModel):
-    Amount: float
-    Payee: str
-    Date: str
-    Description: str
-    File: str
-
-
-class FundraiserDetail(BaseModel):
-    Name: str
-    Date: str
-    Description: str
-    TargetAmount: float
-    CurrentAmount: float
-    Transactions: List[Transaction]
-
-
-class FundraiserSummary(BaseModel):
-    id: str
-    Name: str
-    CurrentAmount: float
-    TargetAmount: float
+app.include_router(auth_router)
+app.include_router(fundraisers_router)
+app.include_router(transactions_router)
 
 
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
-
-
-@app.get("/hello/{name}")
-async def say_hello(name: str):
-    return {"message": f"Hello {name}"}
-
-
-@app.get("/fundraisers", response_model=List[FundraiserSummary])
-async def list_fundraisers():
-    # TODO: replace with real DB query
-    return []
-
-
-@app.get("/fundraisers/{fundraiser_id}", response_model=FundraiserDetail)
-async def get_fundraiser(fundraiser_id: str):
-    # TODO: replace with real DB query
-    raise HTTPException(status_code=404, detail="Fundraiser not found")
