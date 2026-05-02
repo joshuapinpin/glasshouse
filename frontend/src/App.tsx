@@ -6,12 +6,39 @@ import AccountPage from './pages/AccountPage';
 import CreateFundraiserPage from './pages/CreateFundraiserPage';
 import EditTrackerPage from './pages/EditTrackerPage';
 import DonorViewPage from './pages/DonorViewPage';
+import { fetchFundraisers, ApiFundraiserSummary} from './services/api';
 
 type Page = 'auth' | 'account' | 'create' | 'edit' | 'donor';
 
 const App: React.FC = () => {
   const [page, setPage] = useState<Page>('auth');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const [fundraisers, setFundraisers] = useState<ApiFundraiserSummary[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+      if (page === 'account'))  {
+          fetchFundraisers().then(setFundraisers);
+          }
+      }, [page]);
+
+  <AccountPage
+      userName="Jane"
+      initials="JD"
+      fundraisers={fundraisers}
+      onViewFundraiser={(id) => {
+          setSelectedId(id);
+          setPage('edit');
+      }}
+      onCreateNew={() => setPage('create')}
+  />
+
+  fundraisers = {apiFundraisers.map(f -> (
+      id: f.id,
+      name: f.Name,
+      totalRaised: f.currentAmount,
+      ))}
 
   const handleLogin = () => {
     setIsLoggedIn(true);

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Topbar from '../components/Topbar';
+import { fetchFundraiser, ApiFundraiserDetail } from '../services/api';
 
 export type EvidenceStatus = 'evidenced' | 'needs_note' | 'income';
 
@@ -14,12 +15,32 @@ export interface Transaction {
 }
 
 interface EditTrackerPageProps {
+    fundraiserId: string;
   fundraiserName?: string;
   fundraiserBank?: string;
   transactions?: Transaction[];
   onBack?: () => void;
   onSave?: (transactions: Transaction[]) => void;
 }
+
+const [detail, setDetail] = useState<ApiFundraiserDetail | null>(null);
+const [loading, setLoading] = useState(true);
+
+useEffect(()=> {
+    fetchFundraiser(fundraiserId)
+    .then(setDetail)
+    .finally(()=> setLoading(false));
+    }, [fundraiserId]);
+
+const transactions: Transaction[] = (detail?.Transactions ?? []).map((t, i) => ({
+    id: String(i),
+    description, t.Payee,
+    date: t.Date,
+    amount: -t.Amount,
+    note: t.Description,
+    files: t.File ? [t.File] : [],
+    status: 'needs_note', // derive from backend
+    }));
 
 const FileIcon = () => (
   <svg width="12" height="12" viewBox="0 0 14 14" fill="none">

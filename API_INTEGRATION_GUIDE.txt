@@ -1,0 +1,202 @@
+STEP-BY-STEP: WIRING THE UI TO FASTAPI
+=======================================
+
+
+STEP 1 — Add CORS + endpoints to FastAPI (backend/main.py)
+-----------------------------------------------------------
+The frontend runs on localhost:5173, FastAPI on localhost:8000.
+You need CORS middleware or the browser will block requests.
+Then add the two endpoints:
+
+    from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
+    from pydantic import BaseModel
+    from typing import List
+
+    app = FastAPI()
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:5173"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # --- Pydantic models matching mock.json shape ---
+    class Transaction(BaseModel):
+        Amount: float
+        Payee: str
+        Date: str
+        Description: str
+        File: str
+
+    class FundraiserDetail(BaseModel):
+        Name: str
+        Date: str
+        Description: str
+        TargetAmount: float
+        CurrentAmount: float
+        Transactions: List[Transaction]
+
+    class FundraiserSummary(BaseModel):
+        id: str
+        Name: str
+        CurrentAmount: float
+        TargetAmount: float
+
+    # --- Endpoints ---
+    @app.get("/fundraisers", response_model=List[FundraiserSummary])
+    async def list_fundraisers():
+        return [...]   # query your DB here
+
+    @app.get("/fundraisers/{fundraiser_id}", response_model=FundraiserDetail)
+    async def get_fundraiser(fundraiser_id: str):
+        return {...}   # fetch by ID from DB
+
+
+STEP 2 — Create a typed API service layer (frontend/src/services/api.ts)
+------------------------------------------------------------------------
+This file is the single place that knows the base URL and data shapes.
+All components call this, never fetch directly.
+
+    const BASE = "http://localhost:8000";
+
+    // Types matching mock.json
+    export interface ApiTransaction {
+      Amount: number;
+      Payee: string;
+      Date: string;
+      Description: string;
+      File: string;
+    }
+
+    export interface ApiFundraiserDetail {
+      Name: string;
+      Date: string;
+      Description: string;
+      TargetAmount: number;
+      CurrentAmount: number;
+      Transactions: ApiTransaction[];
+    }
+
+    export interface ApiFundraiserSummary {
+      id: string;
+      Name: string;
+      CurrentAmount: number;
+      TargetAmount: number;
+    }
+
+    export async function fetchFundraisers(): Promise<ApiFundraiserSummary[]> {
+      const res = await fetch(`${BASE}/fundraisers`);
+      if (!res.ok) throw new Error("Failed to load fundraisers");
+      return res.json();
+    }
+
+    export async function fetchFundraiser(id: string): Promise<ApiFundraiserDetail> {
+      const res = await fetch(`${BASE}/fundraisers/${id}`);
+      if (!res.ok) throw new Error("Failed to load fundraiser");
+      return res.json();
+    }
+
+
+STEP 3 — Wire AccountPage to GET /fundraisers
+----------------------------------------------
+AccountPage currently accepts fundraisers as a prop with hardcoded defaults.
+Instead, fetch from the API and pass the data in.
+The fetch lives in App.tsx (or in AccountPage itself with useEffect):
+
+In App.tsx — add state and fetch:
+
+    import { fetchFundraisers, ApiFundraiserSummary } from './services/api';
+
+    const [fundraisers, setFundraisers] = useState<ApiFundraiserSummary[]>([]);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+
+    useEffect(() => {
+      if (page === 'account') {
+        fetchFundraisers().then(setFundraisers);
+      }
+    }, [page]);
+
+Pass to the component:
+
+    <AccountPage
+      userName="Jane"
+      initials="JD"
+      fundraisers={fundraisers}
+      onViewFundraiser={(id) => {
+        setSelectedId(id);
+        setPage('edit');
+      }}
+      onCreateNew={() => setPage('create')}
+    />
+
+Map ApiFundraiserSummary to the Fundraiser interface AccountPage expects
+(field names differ — Name vs name):
+
+    fundraisers={apiFundraisers.map(f => ({
+      id: f.id,
+      name: f.Name,
+      totalRaised: f.CurrentAmount,
+      // fill bank/accountMasked from API once backend exposes them
+    }))}
+
+
+STEP 4 — Wire EditTrackerPage to GET /fundraisers/{id}
+-------------------------------------------------------
+EditTrackerPage needs the selected fundraiser ID (from Step 3)
+and fetches its transactions.
+
+Add fundraiserId prop to EditTrackerPage:
+
+    interface EditTrackerPageProps {
+      fundraiserId: string;   // new
+      ...
+    }
+
+Fetch inside the component:
+
+    import { fetchFundraiser, ApiFundraiserDetail } from '../services/api';
+
+    const [detail, setDetail] = useState<ApiFundraiserDetail | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      fetchFundraiser(fundraiserId)
+        .then(setDetail)
+        .finally(() => setLoading(false));
+    }, [fundraiserId]);
+
+Map API transactions to the UI's Transaction type:
+
+    const transactions: Transaction[] = (detail?.Transactions ?? []).map((t, i) => ({
+      id: String(i),
+      description: t.Payee,
+      date: t.Date,
+      amount: -t.Amount,       // negative = expense in your UI model
+      note: t.Description,
+      files: t.File ? [t.File] : [],
+      status: 'needs_note',    // derive this from backend logic later
+    }));
+
+
+STEP 5 — Handle loading and error states
+-----------------------------------------
+Every component that fetches should show feedback. Same pattern everywhere:
+
+    if (loading) return <div className="page-shell"><p>Loading...</p></div>;
+    if (!detail)  return <div className="page-shell"><p>Failed to load.</p></div>;
+
+
+SUMMARY OF DATA FLOW
+=====================
+
+    App.tsx
+      └── fetchFundraisers()        → AccountPage   (list view)
+      └── selectedId state
+            └── fetchFundraiser(id) → EditTrackerPage (detail + transactions)
+
+Key principle:
+  - services/api.ts  → owns all fetch logic
+  - components       → own display + local UI state
+  - App.tsx          → owns navigation state + passes selected ID between pages

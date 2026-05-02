@@ -1,0 +1,23 @@
+{
+  "Name": "hackathon fundraiser",
+  "Date": "02/05/2026",
+  "Description" : "etc etc",
+  "TargetAmount": 123,
+  "CurrentAmount": 100,
+  "Transactions" : [
+    {
+      "Amount": 3,
+      "Payee": "McDonalds Manners",
+      "Date": "02/05/2026",
+      "Description": "I bought a hot chocolate",
+      "File": "static/pathhere"
+    },
+    {
+      "Amount": 40,
+      "Payee": "Anthropic",
+      "Date": "02/05/2026",
+      "Description": "Claude Pro subscription",
+      "File": "static/pathhere"
+    }
+  ]
+}
