@@ -62,8 +62,6 @@ class AkahuClient:
             "fundraiserID": fundraiser_id,
             "amount": t["amount"],
             "payee": t["description"],
-            "description": None,
-            "file": None,
         }
 
     def upsert_transactions(self, fundraiser_id: int, transactions: list[dict]) -> int:
