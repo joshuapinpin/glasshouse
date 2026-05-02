@@ -1,0 +1,7 @@
+README.md
+pyproject.toml
+hackathon.egg-info/PKG-INFO
+hackathon.egg-info/SOURCES.txt
+hackathon.egg-info/dependency_links.txt
+hackathon.egg-info/requires.txt
+hackathon.egg-info/top_level.txt
