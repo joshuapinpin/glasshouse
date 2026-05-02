@@ -1,13 +1,7 @@
 import React, { useState } from 'react';
+import Logo from '../logo/logo';
 
 type Mode = 'login' | 'signup';
-
-const GlasshouseIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
-    <rect x="2" y="2" width="14" height="14" rx="2.5" fill="none" stroke="white" strokeWidth="1.4" />
-    <path d="M5.5 9h7M5.5 6h7M5.5 12h4.5" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
-  </svg>
-);
 
 const ShieldIcon = () => (
   <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -54,9 +48,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onSignup }) => {
           gap: 10,
           marginBottom: 8,
         }}>
-          <div className="brand-icon" style={{ width: 40, height: 40, borderRadius: 10 }}>
-            <GlasshouseIcon />
-          </div>
+          <Logo />
           <span style={{
             fontFamily: 'var(--font-display)',
             fontSize: 28,
