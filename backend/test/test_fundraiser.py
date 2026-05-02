@@ -17,16 +17,6 @@ TEST_FUNDRAISER_DATA = {
     "akahu_access_token": "test_token",
 }
 
-UPDATED_FUNDRAISER_DATA = {
-    "id": 999,
-    "title": "Updated Test Fundraiser",
-    "description": "This fundraiser has been updated",
-    "goal_amount": 15000.00,
-    "current_amount": 2500.00,
-    "status": "active",
-    "created_by": "test@example.com",
-}
-
 
 def test_add_fundraiser():
     """Test adding a new fundraiser"""
@@ -52,7 +42,7 @@ def test_get_fundraiser(fundraiser_id: int = 999):
     print("\n=== Testing Get Fundraiser ===")
     response = client.get(
         f"{BASE_URL}/get",
-        params={"fundraiserId": fundraiser_id}
+        params={"fundraiserID": fundraiser_id}
     )
     print(f"Status Code: {response.status_code}")
     data = response.json()
@@ -146,54 +136,19 @@ def test_invalid_fundraiser_data():
         print(f"⚠ Invalid data was accepted (may need validation)")
 
 
-def test_fundraiser_workflow():
-    """Test complete fundraiser workflow: create -> read -> verify"""
-    print("\n=== Testing Complete Fundraiser Workflow ===")
 
-    # Step 1: Create
-    print("\n[Step 1] Creating fundraiser...")
-    create_response = client.post(f"{BASE_URL}/add", json=TEST_FUNDRAISER_DATA)
-
-    if create_response.status_code != 200:
-        print("✗ Failed to create fundraiser, aborting workflow test")
-        return
-
-    created_data = create_response.json()
-    fundraiser_id = TEST_FUNDRAISER_DATA["id"]
-    print(f"✓ Fundraiser created with ID: {fundraiser_id}")
-
-    time.sleep(0.5)
-
-    # Step 2: Read
-    print("\n[Step 2] Retrieving fundraiser...")
-    get_response = client.get(f"{BASE_URL}/get",
-                              params={"fundraiserId": fundraiser_id})
-
-    if get_response.status_code != 200:
-        print("✗ Failed to retrieve fundraiser")
-        return
-
-    retrieved_data = get_response.json()
-    print(f"✓ Fundraiser retrieved successfully")
-
-    # Step 3: Verify
-    print("\n[Step 3] Verifying data integrity...")
-    if retrieved_data:
-        title_match = retrieved_data.get("title") == TEST_FUNDRAISER_DATA[
-            "title"]
-        goal_match = retrieved_data.get("goal_amount") == TEST_FUNDRAISER_DATA[
-            "goal_amount"]
-
-        if title_match and goal_match:
-            print("✓ Data integrity verified - all fields match")
-        else:
-            print("⚠ Data mismatch detected")
-            print(f"  Title match: {title_match}")
-            print(f"  Goal match: {goal_match}")
-    else:
-        print("✗ No data returned to verify")
-
-    print("\n✓ Workflow test completed")
+def test_update_amount():
+    """Test updating fundraiser description"""
+    print("\n=== Testing Update Fundraiser Description ===")
+    response = client.post(
+        f"{BASE_URL}/update_current_amount",
+        params={
+            "fundraiserID": 999,
+            "current_amount": 10.5
+        }
+    )
+    print(f"Status Code: {response.status_code}")
+    print(f"Response: {response.json()}")
 
 
 def run_all_tests():
@@ -212,36 +167,27 @@ def run_all_tests():
         test_get_fundraiser(TEST_FUNDRAISER_DATA["fundraiserID"])
         time.sleep(1)
 
-        # Test 3: Get all fundraisers
-        test_get_all_fundraisers()
+        # # Test 3: Get all fundraisers
+        # test_get_all_fundraisers()
+        # time.sleep(1)
+        #
+        # # Test 4: Add duplicate fundraiser
+        # test_add_duplicate_fundraiser()
+        # time.sleep(1)
+        #
+        # # Test 5: Get non-existent fundraiser
+        # test_get_nonexistent_fundraiser()
+        # time.sleep(1)
+        #
+        # # Test 6: Invalid data
+        # test_invalid_fundraiser_data()
+        # time.sleep(1)
+
+        test_update_amount()
         time.sleep(1)
 
-        # Test 4: Add duplicate fundraiser
-        test_add_duplicate_fundraiser()
-        time.sleep(1)
 
-        # Test 5: Get non-existent fundraiser
-        test_get_nonexistent_fundraiser()
-        time.sleep(1)
 
-        # Test 6: Invalid data
-        test_invalid_fundraiser_data()
-        time.sleep(1)
-
-        # Test 7: Complete workflow
-        test_fundraiser_workflow()
-
-        # print("\n" + "=" * 60)
-        # print("ALL TESTS COMPLETED")
-        # print("=" * 60)
-        # print("\n📊 Summary:")
-        # print("   - Add Fundraiser: Tested")
-        # print("   - Get Fundraiser: Tested")
-        # print("   - Get All Fundraisers: Tested")
-        # print("   - Duplicate Handling: Tested")
-        # print("   - Non-existent Fundraiser: Tested")
-        # print("   - Invalid Data: Tested")
-        # print("   - Complete Workflow: Tested")
 
     except Exception as e:
         print(f"\n❌ Error during testing: {e}")

@@ -12,7 +12,7 @@ router = APIRouter(
 @router.post("/add")
 async def add_transaction(transaction: Transaction):
     try:
-        response = transaction_service.add_transaction(transaction)
+        response = transaction_service.add_transaction(transaction.model_dump())
         return response
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -26,9 +26,9 @@ async def update_transaction_description(description: str):
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.put("/update_file")
-async def update_transaction_file(filePath: str):
+async def update_transaction_file(transactionID: int, filePath: str):
     try:
-        response = transaction_service.update_file(filePath)
+        response = transaction_service.update_file(transactionID, filePath)
         return response
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -64,7 +64,7 @@ class TransactionService:
         """
         try:
             response = supabase.table(self.table_name).select("*").eq(
-                "FundraiserID", fundraiser_id).execute()
+                "fundraiserID", fundraiser_id).execute()
             return response.data
         except Exception as e:
             raise Exception(
@@ -85,7 +85,7 @@ class TransactionService:
         """
         try:
             response = supabase.table(self.table_name).update(update_data).eq(
-                "TransactionID", transaction_id).execute()
+                "transactionID", transaction_id).execute()
             return response.data[0] if response.data else None
         except Exception as e:
             raise Exception(f"Error updating transaction: {str(e)}")
@@ -121,10 +121,10 @@ class TransactionService:
             Specific details of the return value depend on the implementation of the
             `update_column` method.
         """
-        return self.update_column(transaction_id, "Description", new_description)
+        return self.update_column(transaction_id, "description", new_description)
 
     def update_file(self, transaction_id: int, new_file_path: str):
-        return self.update_column(transaction_id, "File", new_file_path)
+        return self.update_column(transaction_id, "file", new_file_path)
 
     def delete_transaction(self, transaction_id: int) -> bool:
         """
@@ -138,7 +138,7 @@ class TransactionService:
         """
         try:
             response = supabase.table(self.table_name).delete().eq(
-                "TransactionID", transaction_id).execute()
+                "transactionID", transaction_id).execute()
             return True
         except Exception as e:
             raise Exception(f"Error deleting transaction: {str(e)}")
