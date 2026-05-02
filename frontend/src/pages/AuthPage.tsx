@@ -146,7 +146,15 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onSignup }) => {
 
           {mode === 'login' && (
             <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--color-ink-muted)' }}>
-              <a href="#">Forgot password?</a>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  alert('Password reset link would be sent to your email.');
+                }}
+              >
+                Forgot password?
+              </a>
             </p>
           )}
         </form>
