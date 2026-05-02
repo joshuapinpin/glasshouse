@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: hackathon
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: >=3.13
+Description-Content-Type: text/markdown
+Requires-Dist: dotenv>=0.9.9
+Requires-Dist: fastapi>=0.136.1
+Requires-Dist: supabase>=2.29.0
+
+# glasshouse

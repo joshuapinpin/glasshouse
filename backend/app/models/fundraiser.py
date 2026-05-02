@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 
 from backend.app.models.transaction import Transaction
 
@@ -10,4 +10,8 @@ class Fundraiser(BaseModel):
     target_amount: float
     current_amount: float
     transactions: list[Transaction] = Field(default_factory=list)
+    email: EmailStr
+    target_amount: float
+    current_amount: float
+    akahu_access_token: str
 

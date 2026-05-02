@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
 
 from backend.app.services.auth_service import auth_service
+from app.services.users_db import auth_service
 
 router = APIRouter(
     prefix="/auth",

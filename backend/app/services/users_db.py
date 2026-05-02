@@ -2,6 +2,7 @@
 
 import os
 from typing import Optional
+import os
 
 from dotenv import load_dotenv
 from supabase import create_client, Client
