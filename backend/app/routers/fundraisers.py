@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException
 from pydantic import EmailStr
 
-from models.fundraiser import Fundraiser
+from app.models.fundraiser import Fundraiser
 from app.services.fundraisers_db import fundraiser_service
 
 router = APIRouter(

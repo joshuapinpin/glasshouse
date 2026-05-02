@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, EmailStr
 
-from models.transaction import Transaction
+from app.models.transaction import Transaction
 from app.services.transaction_db import transaction_service
 
 router = APIRouter(
