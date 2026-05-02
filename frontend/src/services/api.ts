@@ -68,7 +68,7 @@ export async function fetchFundraisers(email: string): Promise<ApiFundraiser[]> 
 }
 
 export async function fetchFundraiser(fundraiserId: number): Promise<ApiFundraiser> {
-    const res = await fetch(`${BASE}/fundraisers/get?fundraiserId=${fundraiserId}`);
+    const res = await fetch(`${BASE}/fundraisers/get?fundraiserID=${fundraiserId}`);
     if (!res.ok) throw new Error('Failed to load fundraiser');
     return res.json();
 }
