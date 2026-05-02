@@ -1,0 +1,12 @@
+{
+  "name": "glasshouse",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "npm run dev --prefix frontend",
+    "dev": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "test": "npm run test --prefix frontend",
+    "install:frontend": "npm install --prefix frontend"
+  }
+}
