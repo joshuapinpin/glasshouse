@@ -7,6 +7,5 @@ class Transaction(BaseModel):
     fundraiserID: int
     amount: float
     payee: str
-    date: str
     description: Optional[str] = None
     file: Optional[str] = None
