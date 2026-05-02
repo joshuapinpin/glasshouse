@@ -17,6 +17,7 @@ interface AccountPageProps {
   fundraisers?: Fundraiser[];
   onViewFundraiser?: (id: string) => void;
   onCreateNew?: () => void;
+  onLogout?: () => void;
 }
 
 const ChevronIcon = () => (
@@ -58,13 +59,14 @@ const AccountPage: React.FC<AccountPageProps> = ({
   fundraisers = defaultFundraisers,
   onViewFundraiser,
   onCreateNew,
+  onLogout,
 }) => {
   const totalRaised = fundraisers.reduce((sum, f) => sum + f.totalRaised, 0);
   const totalTx = fundraisers.reduce((sum, f) => sum + f.transactionCount, 0);
 
   return (
     <div className="page-shell">
-      <Topbar userName={userName} initials={initials} />
+      <Topbar userName={userName} initials={initials} onLogout={onLogout} />
 
       <main className="page-content">
         <div className="page-header fade-up">

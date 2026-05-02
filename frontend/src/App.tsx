@@ -10,19 +10,72 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
 type Page = 'auth' | 'account' | 'create' | 'edit' | 'donor' | 'forgot';
 
+function getInitials(email: string): string {
+  return email.split('@')[0].slice(0, 2).toUpperCase();
+}
+
 const App: React.FC = () => {
   const [page, setPage] = useState<Page>('auth');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [prefillEmail, setPrefillEmail] = useState('');
+  const [userName, setUserName] = useState('');
+  const [userInitials, setUserInitials] = useState('');
 
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    setPage('account');
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      const res = await fetch('/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || 'Login failed');
+      }
+      const data = await res.json();
+      // Store user info from response
+      const name = data.user?.email?.split('@')[0] || email.split('@')[0];
+      setUserName(name);
+      setUserInitials(getInitials(email));
+      setIsLoggedIn(true);
+      setPage('account');
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
-  const handleSignup = () => {
-    setIsLoggedIn(true);
-    setPage('account');
+  const handleSignup = async (name: string, email: string, password: string) => {
+    try {
+      const res = await fetch('/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || 'Signup failed');
+      }
+      const data = await res.json();
+      const displayName = name || email.split('@')[0];
+      setUserName(displayName);
+      setUserInitials(getInitials(email));
+      setIsLoggedIn(true);
+      setPage('account');
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/auth/signout', { method: 'POST' });
+    } catch (_) {
+      // Silently handle — still navigate back even if API fails
+    }
+    setIsLoggedIn(false);
+    setUserName('');
+    setUserInitials('');
+    setPage('auth');
   };
 
   const handleForgotPassword = () => {
@@ -86,12 +139,13 @@ const App: React.FC = () => {
           prefillEmail={prefillEmail}
         />
       )}
-      {page === 'account' && (
+            {page === 'account' && (
         <AccountPage
-          userName="Jane"
-          initials="JD"
+          userName={userName}
+          initials={userInitials}
           onViewFundraiser={() => setPage('edit')}
           onCreateNew={() => setPage('create')}
+          onLogout={handleLogout}
         />
       )}
       {page === 'create' && (
