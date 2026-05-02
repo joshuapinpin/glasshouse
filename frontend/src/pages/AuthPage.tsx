@@ -13,12 +13,14 @@ const ShieldIcon = () => (
 interface AuthPageProps {
   onLogin?: (email: string, password: string) => void;
   onSignup?: (name: string, email: string, password: string) => void;
+  onForgotPassword?: () => void;
+  prefillEmail?: string;
 }
 
-const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onSignup }) => {
+const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onSignup, onForgotPassword, prefillEmail }) => {
   const [mode, setMode] = useState<Mode>('login');
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(prefillEmail || '');
   const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -136,9 +138,9 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onSignup }) => {
             {mode === 'login' ? 'Log in to Glasshouse' : 'Create account'}
           </button>
 
-          {mode === 'login' && (
+                    {mode === 'login' && (
             <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--color-ink-muted)' }}>
-              <a href="#">Forgot password?</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); onForgotPassword?.(); }}>Forgot password?</a>
             </p>
           )}
         </form>

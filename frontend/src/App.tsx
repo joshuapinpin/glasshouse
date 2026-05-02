@@ -6,12 +6,14 @@ import AccountPage from './pages/AccountPage';
 import CreateFundraiserPage from './pages/CreateFundraiserPage';
 import EditTrackerPage from './pages/EditTrackerPage';
 import DonorViewPage from './pages/DonorViewPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
-type Page = 'auth' | 'account' | 'create' | 'edit' | 'donor';
+type Page = 'auth' | 'account' | 'create' | 'edit' | 'donor' | 'forgot';
 
 const App: React.FC = () => {
   const [page, setPage] = useState<Page>('auth');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [prefillEmail, setPrefillEmail] = useState('');
 
   const handleLogin = () => {
     setIsLoggedIn(true);
@@ -21,6 +23,15 @@ const App: React.FC = () => {
   const handleSignup = () => {
     setIsLoggedIn(true);
     setPage('account');
+  };
+
+  const handleForgotPassword = () => {
+    setPage('forgot');
+  };
+
+  const handleForgotBack = (email?: string) => {
+    if (email) setPrefillEmail(email);
+    setPage('auth');
   };
 
   // Simple demo nav — replace with React Router in production
@@ -69,10 +80,12 @@ const App: React.FC = () => {
       </div>
 
       {/* Pages */}
-      {page === 'auth' && (
+            {page === 'auth' && (
         <AuthPage
           onLogin={handleLogin}
           onSignup={handleSignup}
+          onForgotPassword={handleForgotPassword}
+          prefillEmail={prefillEmail}
         />
       )}
       {page === 'account' && (
@@ -94,8 +107,13 @@ const App: React.FC = () => {
           onBack={() => setPage('account')}
         />
       )}
-      {page === 'donor' && (
+            {page === 'donor' && (
         <DonorViewPage />
+      )}
+      {page === 'forgot' && (
+        <ForgotPasswordPage
+          onBack={handleForgotBack}
+        />
       )}
     </>
   );
