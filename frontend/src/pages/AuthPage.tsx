@@ -1,13 +1,7 @@
 import React, { useState } from 'react';
+import Logo from '../logo/logo';
 
 type Mode = 'login' | 'signup';
-
-const GlasshouseIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
-    <rect x="2" y="2" width="14" height="14" rx="2.5" fill="none" stroke="white" strokeWidth="1.4" />
-    <path d="M5.5 9h7M5.5 6h7M5.5 12h4.5" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
-  </svg>
-);
 
 const ShieldIcon = () => (
   <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -19,12 +13,14 @@ const ShieldIcon = () => (
 interface AuthPageProps {
   onLogin?: (email: string, password: string) => void;
   onSignup?: (name: string, email: string, password: string) => void;
+  onForgotPassword?: () => void;
+  prefillEmail?: string;
 }
 
-const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onSignup }) => {
+const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onSignup, onForgotPassword, prefillEmail }) => {
   const [mode, setMode] = useState<Mode>('login');
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(prefillEmail || '');
   const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -54,9 +50,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onSignup }) => {
           gap: 10,
           marginBottom: 8,
         }}>
-          <div className="brand-icon" style={{ width: 40, height: 40, borderRadius: 10 }}>
-            <GlasshouseIcon />
-          </div>
+          <Logo />
           <span style={{
             fontFamily: 'var(--font-display)',
             fontSize: 28,
@@ -144,17 +138,9 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onSignup }) => {
             {mode === 'login' ? 'Log in to Glasshouse' : 'Create account'}
           </button>
 
-          {mode === 'login' && (
+                    {mode === 'login' && (
             <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--color-ink-muted)' }}>
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  alert('Password reset link would be sent to your email.');
-                }}
-              >
-                Forgot password?
-              </a>
+              <a href="#" onClick={(e) => { e.preventDefault(); onForgotPassword?.(); }}>Forgot password?</a>
             </p>
           )}
         </form>
