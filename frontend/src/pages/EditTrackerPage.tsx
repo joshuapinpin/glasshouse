@@ -1,0 +1,247 @@
+import React, { useState } from 'react';
+import Topbar from '../components/Topbar';
+
+export type EvidenceStatus = 'evidenced' | 'needs_note' | 'income';
+
+export interface Transaction {
+  id: string;
+  description: string;
+  date: string;
+  amount: number; // negative = debit, positive = credit
+  note: string;
+  files: string[];
+  status: EvidenceStatus;
+}
+
+interface EditTrackerPageProps {
+  fundraiserName?: string;
+  fundraiserBank?: string;
+  transactions?: Transaction[];
+  onBack?: () => void;
+  onSave?: (transactions: Transaction[]) => void;
+}
+
+const FileIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+    <path d="M3 12V2.5L7 1h4v11H3z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+    <path d="M7 1v3H3" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+  </svg>
+);
+
+const defaultTransactions: Transaction[] = [
+  {
+    id: 'tx1',
+    description: 'Auckland City Hospital',
+    date: '14 Apr 2025',
+    amount: -1240,
+    note: 'Specialist consultation and imaging — invoice attached',
+    files: ['invoice_apr14.pdf'],
+    status: 'evidenced',
+  },
+  {
+    id: 'tx2',
+    description: 'Pharmacy Direct',
+    date: '18 Apr 2025',
+    amount: -87.50,
+    note: '',
+    files: [],
+    status: 'needs_note',
+  },
+  {
+    id: 'tx3',
+    description: 'Donation received',
+    date: '20 Apr 2025',
+    amount: 500,
+    note: '',
+    files: [],
+    status: 'income',
+  },
+  {
+    id: 'tx4',
+    description: 'Radiology NZ',
+    date: '22 Apr 2025',
+    amount: -320,
+    note: '',
+    files: [],
+    status: 'needs_note',
+  },
+];
+
+const statusConfig: Record<EvidenceStatus, { label: string; className: string }> = {
+  evidenced:  { label: 'Evidenced',   className: 'badge badge-green' },
+  needs_note: { label: 'Needs note',  className: 'badge badge-amber' },
+  income:     { label: 'Income',      className: 'badge badge-gray'  },
+};
+
+const EditTrackerPage: React.FC<EditTrackerPageProps> = ({
+  fundraiserName = 'Medical fund for Mum',
+  fundraiserBank = 'ANZ ••••7821',
+  transactions: initialTransactions = defaultTransactions,
+  onBack,
+  onSave,
+}) => {
+  const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
+  const [saved, setSaved] = useState(false);
+
+  const updateNote = (id: string, note: string) => {
+    setTransactions(prev => prev.map(tx =>
+      tx.id === id
+        ? {
+            ...tx,
+            note,
+            status: tx.amount < 0
+              ? (note.trim() ? 'evidenced' : 'needs_note')
+              : tx.status,
+          }
+        : tx
+    ));
+  };
+
+  const simulateFileUpload = (id: string) => {
+    const name = `receipt_${id.slice(-2)}.pdf`;
+    setTransactions(prev => prev.map(tx =>
+      tx.id === id ? { ...tx, files: [...tx.files, name] } : tx
+    ));
+  };
+
+  const handleSave = () => {
+    onSave?.(transactions);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const needsNoteCount = transactions.filter(tx => tx.status === 'needs_note').length;
+
+  return (
+    <div className="page-shell">
+      <Topbar initials="JD" userName="Jane" />
+
+      <main className="page-content">
+        <button className="back-link" onClick={onBack}>
+          ← {fundraiserName}
+        </button>
+
+        <div className="page-header fade-up">
+          <h1>Edit transactions</h1>
+          <p>
+            Add notes and evidence to each transaction to keep donors informed.
+            {needsNoteCount > 0 && (
+              <span style={{ color: 'var(--color-glass-amber)', marginLeft: 8 }}>
+                {needsNoteCount} transaction{needsNoteCount > 1 ? 's' : ''} still need{needsNoteCount === 1 ? 's' : ''} a note.
+              </span>
+            )}
+          </p>
+        </div>
+
+        {/* Account info pill */}
+        <div className="fade-up fade-up-1" style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 8,
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-xl)',
+          padding: '5px 14px',
+          fontSize: 12,
+          color: 'var(--color-ink-mid)',
+          marginBottom: '1.25rem',
+        }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--color-glass-teal)', display: 'inline-block' }} />
+          {fundraiserBank}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {transactions.map((tx, i) => (
+            <div
+              key={tx.id}
+              className={`card card-pad fade-up fade-up-${Math.min(i + 2, 4)}`}
+            >
+              {/* Transaction header */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                marginBottom: tx.status !== 'income' ? 12 : 0,
+              }}>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-ink)', marginBottom: 2 }}>
+                    {tx.description}
+                  </p>
+                  <p style={{ fontSize: 12, color: 'var(--color-ink-muted)' }}>{tx.date}</p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{
+                    fontSize: 15,
+                    fontWeight: 500,
+                    marginBottom: 4,
+                    color: tx.amount < 0 ? 'var(--color-glass-red)' : 'var(--color-glass-green)',
+                  }}>
+                    {tx.amount < 0 ? '−' : '+'}${Math.abs(tx.amount).toFixed(2)}
+                  </p>
+                  <span className={statusConfig[tx.status].className}>
+                    {statusConfig[tx.status].label}
+                  </span>
+                </div>
+              </div>
+
+              {/* Note + evidence — only for debits */}
+              {tx.status !== 'income' && (
+                <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
+                  <div className="field" style={{ marginBottom: 10 }}>
+                    <label>Note for donors</label>
+                    <input
+                      type="text"
+                      placeholder="Describe what this was for..."
+                      value={tx.note}
+                      onChange={e => updateNote(tx.id, e.target.value)}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    {tx.files.map(file => (
+                      <div key={file} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        background: 'var(--color-bg)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '4px 10px',
+                        fontSize: 12,
+                        color: 'var(--color-ink-mid)',
+                      }}>
+                        <FileIcon />{file}
+                      </div>
+                    ))}
+                    <button
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: 12,
+                        color: 'var(--color-glass-blue)',
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                      onClick={() => simulateFileUpload(tx.id)}
+                    >
+                      + Add file or photo
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <button
+          className="btn btn-primary btn-full fade-up"
+          style={{ marginTop: '1.5rem', padding: '0.875rem' }}
+          onClick={handleSave}
+        >
+          {saved ? '✓ Saved' : 'Save changes'}
+        </button>
+      </main>
+    </div>
+  );
+};
+
+export default EditTrackerPage;
