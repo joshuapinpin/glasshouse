@@ -25,8 +25,6 @@ const App: React.FC = () => {
     setPage('account');
   };
 
-<<<<<<< HEAD
-=======
   const handleForgotPassword = () => {
     setPage('forgot');
   };
@@ -35,9 +33,6 @@ const App: React.FC = () => {
     if (email) setPrefillEmail(email);
     setPage('auth');
   };
-
-  // Simple demo nav — replace with React Router in production
->>>>>>> origin/Frontend-Design
   return (
     <>
       {/* Demo page switcher bar (remove in production) */}
