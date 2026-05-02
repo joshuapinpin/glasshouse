@@ -227,7 +227,17 @@ const EditTrackerPage: React.FC<EditTrackerPageProps> = ({
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {transactions.map((tx, i) => (
-            <div key={tx.id} className={`card card-pad fade-up fade-up-${Math.min(i + 2, 4)}`}>
+            <div
+              key={tx.id}
+              className={`card card-pad fade-up fade-up-${Math.min(i + 2, 4)}`}
+              style={{
+                borderLeft: tx.status === 'needs_note'
+                  ? '3px solid var(--color-glass-amber)'
+                  : tx.status === 'evidenced'
+                    ? '3px solid var(--color-glass-teal)'
+                    : undefined,
+              }}
+            >
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -258,12 +268,24 @@ const EditTrackerPage: React.FC<EditTrackerPageProps> = ({
               {tx.status !== 'income' && (
                 <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
                   <div className="field" style={{ marginBottom: 10 }}>
-                    <label>Note for donors</label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      Note for donors
+                      {tx.note.trim()
+                        ? <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-glass-teal)' }}>✓ Added</span>
+                        : <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-glass-amber)' }}>Required</span>
+                      }
+                    </label>
                     <input
                       type="text"
                       placeholder="Describe what this was for..."
                       value={tx.note}
                       onChange={e => updateNote(tx.id, e.target.value)}
+                      style={tx.note.trim() ? {
+                        borderColor: 'var(--color-glass-teal)',
+                        background: 'var(--color-glass-green-lt)',
+                      } : {
+                        borderColor: 'var(--color-glass-amber)',
+                      }}
                     />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>

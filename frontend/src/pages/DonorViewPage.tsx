@@ -390,7 +390,17 @@ const DetailView: React.FC<DetailViewProps> = ({ fundraiser, onBack }) => {
             const isIncome = tx.amount > 0;
             const hasNote = !!tx.description;
             return (
-              <div key={tx.transactionID} className={`card card-pad fade-up fade-up-${Math.min(i + 4, 4)}`}>
+              <div
+                key={tx.transactionID}
+                className={`card card-pad fade-up fade-up-${Math.min(i + 4, 4)}`}
+                style={{
+                  borderLeft: isIncome
+                    ? undefined
+                    : hasNote
+                      ? '3px solid var(--color-glass-teal)'
+                      : '3px solid var(--color-glass-amber)',
+                }}
+              >
                 <div style={{
                   display: 'flex',
                   justifyContent: 'space-between',
