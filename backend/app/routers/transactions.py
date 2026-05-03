@@ -1,9 +1,14 @@
-from fastapi import APIRouter, HTTPException
+import shutil
+from pathlib import Path
+
+from fastapi import APIRouter, HTTPException, UploadFile, File
 
 from app.models.transaction import Transaction
 from app.services.transaction_db import transaction_service
 from app.services.akahu_client import akahu_client
 from app.services.fundraisers_db import fundraiser_service
+
+UPLOADS_DIR = Path(__file__).resolve().parents[3] / "frontend" / "public" / "uploads"
 
 router = APIRouter(
     prefix="/transactions",
@@ -31,6 +36,19 @@ async def update_transaction_file(transaction_id: int, filePath: str):
     try:
         response = transaction_service.update_file(transaction_id, filePath)
         return response
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/upload_file")
+async def upload_transaction_file(transaction_id: int, file: UploadFile = File(...)):
+    try:
+        UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+        filename = f"{transaction_id}_{file.filename}"
+        dest = UPLOADS_DIR / filename
+        with dest.open("wb") as f:
+            shutil.copyfileobj(file.file, f)
+        transaction_service.update_file(transaction_id, filename)
+        return {"filename": filename}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

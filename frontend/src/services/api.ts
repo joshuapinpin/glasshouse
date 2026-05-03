@@ -121,6 +121,21 @@ export async function syncTransactions(fundraiserId: number): Promise<{ synced: 
     return res.json();
 }
 
+export async function uploadTransactionFile(transactionId: number, file: File): Promise<string> {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch(`${BASE}/transactions/upload_file?transaction_id=${transactionId}`, {
+        method: 'POST',
+        body: form,
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail ?? 'Upload failed');
+    }
+    const data = await res.json();
+    return data.filename;
+}
+
 export async function updateTransactionDescription(transactionId: number, description: string): Promise<void> {
     const res = await fetch(
         `${BASE}/transactions/update_description?transaction_id=${transactionId}&description=${encodeURIComponent(description)}`,

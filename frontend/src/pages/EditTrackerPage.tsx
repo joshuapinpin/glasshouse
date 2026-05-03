@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Topbar from '../components/Topbar';
 import {
   fetchFundraiser,
   fetchTransactions,
   syncTransactions,
   updateTransactionDescription,
+  uploadTransactionFile,
   refreshBank,
   ApiFundraiser,
 } from '../services/api';
@@ -77,6 +78,8 @@ const EditTrackerPage: React.FC<EditTrackerPageProps> = ({
   const [saveError, setSaveError] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState('');
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!fundraiserId) return;
@@ -114,6 +117,29 @@ const EditTrackerPage: React.FC<EditTrackerPageProps> = ({
     setTransactions(prev => prev.map(tx =>
       tx.id === id ? { ...tx, files: [...tx.files, `receipt_${id.slice(-4)}.pdf`] } : tx
     ));
+  };
+
+  const triggerUpload = (id: string) => {
+    setUploadingId(id);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !uploadingId) return;
+    const tx = transactions.find(t => t.id === uploadingId);
+    if (!tx) return;
+    try {
+      const filename = await uploadTransactionFile(tx.transactionId, file);
+      setTransactions(prev => prev.map(t =>
+        t.id === uploadingId ? { ...t, files: [filename] } : t
+      ));
+    } catch (err) {
+      console.error('Upload failed:', err);
+    } finally {
+      setUploadingId(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleSync = async () => {
@@ -228,6 +254,14 @@ const EditTrackerPage: React.FC<EditTrackerPageProps> = ({
           )}
         </div>
 
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFileSelect}
+        />
+
         {transactions.length === 0 && (
           <p style={{ color: 'var(--color-ink-muted)', fontSize: 14 }}>
             No transactions yet — click Sync from Akahu to pull the latest.
@@ -308,9 +342,17 @@ const EditTrackerPage: React.FC<EditTrackerPageProps> = ({
                         borderRadius: 'var(--radius-md)',
                         border: '1px solid var(--color-border)',
                         display: 'block',
+                        marginBottom: 8,
                       }}
                     />
                   ))}
+                  <button
+                    style={{ background: 'none', border: 'none', fontSize: 12, color: 'var(--color-glass-blue)', cursor: uploadingId === tx.id ? 'default' : 'pointer', padding: 0 }}
+                    onClick={() => triggerUpload(tx.id)}
+                    disabled={uploadingId === tx.id}
+                  >
+                    {uploadingId === tx.id ? 'Uploading…' : tx.files.length > 0 ? '↺ Replace image' : '+ Add image'}
+                  </button>
                 </div>
               )}
             </div>
